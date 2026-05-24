@@ -27,7 +27,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <span id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Initializing...
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...
                 </span>
                 <button onclick="fetchLiveSheetData()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold rounded transition">🔄 Sync Now</button>
             </div>
@@ -41,20 +41,20 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
-        <section id="schedule-tab" class="tab-content active"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading schedule...</div></section>
-        <section id="standings-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading standings...</div></section>
-        <section id="rosters-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading rosters...</div></section>
-        <section id="sponsors-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading sponsors...</div></section>
+        <section id="schedule-tab" class="tab-content active"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
+        <section id="standings-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
+        <section id="rosters-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
+        <section id="sponsors-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
     </main>
 
     <script>
-        const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc';
-
         async function fetchLiveSheetData() {
             const statusEl = document.getElementById("syncStatus");
             statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...`;
             
-            const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv`;
+            // CONVERTED LINKS: pubhtml -> pub?output=csv
+            const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
+            
             const urls = [
                 `${base}&gid=0`,
                 `${base}&gid=862932346`,
@@ -64,21 +64,14 @@
 
             try {
                 const responses = await Promise.all(urls.map(url => fetch(url)));
-                
-                // Detailed debug logging
-                responses.forEach((res, i) => {
-                    console.log(`Tab ${i} Fetch Status: ${res.status} | URL: ${res.url}`);
-                    if (!res.ok) throw new Error(`Tab ${i} returned status ${res.status}`);
-                });
-
                 const data = await Promise.all(responses.map(r => r.text()));
                 
-                console.log("Data successfully fetched. Processing...");
                 statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400"></span> Synced`;
-                // Trigger your parse/render functions here
+                console.log("Successfully fetched all tabs!");
+                // NOTE: Call your parsing logic here (e.g., parseTournamentDatabase(data[0], data[1], data[2], data[3]);)
             } catch (err) {
                 console.error("DEBUG ERROR:", err);
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Error (Check Console F12)`;
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Error`;
             }
         }
 
