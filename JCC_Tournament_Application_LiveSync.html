@@ -161,7 +161,7 @@
     </main>
 
     <script>
-        // Updated with your core structural Sheet ID
+        // Set fixed structural Sheet ID
         const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
 
         let appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
@@ -191,7 +191,7 @@
                 if(!res.ok) return ""; 
                 return await res.text();
             } catch (e) {
-                console.warn("Soft bypass on non-critical component sync:", url);
+                console.warn("Fetch exception bypassed:", url);
                 return ""; 
             }
         }
@@ -199,10 +199,11 @@
         async function fetchLiveSheetData() {
             document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Syncing Sheets...`;
             
-            const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Teams`;
-            const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Schedules`;
-            const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Rosters`;
-            const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sponsors`;
+            // GitHub Pages Optimized Endpoint Links to completely bypass CORS security restrictions
+            const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=0`;
+            const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=1384061596`;
+            const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=546342898`;
+            const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=47271811`;
 
             const teamsData = await fetchCSV(urlTeams);
             const schedulesData = await fetchCSV(urlSchedules);
