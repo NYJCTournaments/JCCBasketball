@@ -9,44 +9,33 @@
     <style>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; font-weight: bold; }
+        .active-tab { border-bottom: 4px solid #f59e0b; color: #f59e0b; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900">
+<body class="bg-slate-50 font-sans text-slate-900">
 
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4"><h1 class="text-2xl font-black uppercase">JCC Basketball</h1></div>
-        <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
-            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab">📅 Games</button>
-            <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📊 Standings</button>
-            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200">👥 Rosters</button>
-            <button onclick="switchTab('rules-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📜 Rules</button>
-            <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200">🏆 Sponsors</button>
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-5"><h1 class="text-3xl font-extrabold uppercase tracking-tighter">JCC Basketball</h1></div>
+        <div class="max-w-5xl mx-auto px-4 flex gap-6 text-sm font-bold uppercase tracking-widest">
+            <button onclick="switchTab('schedule-tab', this)" class="tab-btn pb-3 active-tab">Games</button>
+            <button onclick="switchTab('standings-tab', this)" class="tab-btn pb-3 text-slate-400">Standings</button>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border flex items-center justify-between">
-            <label class="font-bold text-sm uppercase">Select Division:</label>
-            <select id="divisionSelector" onchange="renderUI()" class="bg-gray-50 border p-2 rounded text-blue-900 font-bold">
-                <option value="Adult">Adult</option>
-                <option value="Youth">Youth</option>
-                <option value="Kids">Kids</option>
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <div class="mb-8">
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Filter by Division</label>
+            <select id="divisionSelector" onchange="renderSchedule()" class="w-full md:w-64 p-3 bg-white border border-slate-200 rounded-lg shadow-sm font-bold text-slate-800">
+                <option value="Adult">Adult Division</option>
+                <option value="Youth">Youth Division</option>
+                <option value="Kids">Kids Division</option>
             </select>
         </div>
 
         <section id="schedule-tab" class="tab-content active">
-            <table class="w-full bg-white shadow rounded-lg overflow-hidden">
-                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                    <tr><th class="p-3">Time/Court</th><th class="p-3">Home</th><th class="p-3">Away</th></tr>
-                </thead>
-                <tbody id="scheduleTableBody"></tbody>
-            </table>
+            <div id="scheduleContainer" class="grid gap-4">
+                </div>
         </section>
-        <section id="standings-tab" class="tab-content"><div class="p-4 bg-white shadow rounded">Standings data loading...</div></section>
-        <section id="rosters-tab" class="tab-content"><div class="p-4 bg-white shadow rounded">Roster data loading...</div></section>
-        <section id="rules-tab" class="tab-content"><div class="p-4 bg-white shadow rounded">Tournament Rules Content...</div></section>
-        <section id="sponsors-tab" class="tab-content"><div class="p-4 bg-white shadow rounded">Sponsors list...</div></section>
     </main>
 
     <script>
@@ -54,27 +43,39 @@
 
         async function fetchLiveSheetData() {
             const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-            const urls = [`${base}&gid=0`, `${base}&gid=862932346`];
-            const data = await Promise.all((await Promise.all(urls.map(url => fetch(url)))).map(r => r.text()));
+            const data = await Promise.all([
+                (await fetch(`${base}&gid=0`)).text(),
+                (await fetch(`${base}&gid=862932346`)).text()
+            ]);
             
-            // Map data
-            Papa.parse(data[0], {header:true}).data.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = {name: r.TeamName, div: r.Division}; });
+            // 1. Map Teams
+            Papa.parse(data[0], {header:true}).data.forEach(r => { 
+                if(r.TeamID) appState.teams[r.TeamID] = {name: r.TeamName, div: r.Division}; 
+            });
+
+            // 2. Map Schedules
             appState.schedules = Papa.parse(data[1], {header:true}).data;
-            renderUI();
+            renderSchedule();
         }
 
-        function renderUI() {
+        function renderSchedule() {
             const div = document.getElementById("divisionSelector").value;
-            const tbody = document.getElementById("scheduleTableBody");
+            const container = document.getElementById("scheduleContainer");
             
-            tbody.innerHTML = appState.schedules
+            container.innerHTML = appState.schedules
                 .filter(row => appState.teams[row.HomeID]?.div === div || appState.teams[row.AwayID]?.div === div)
                 .map(row => `
-                    <tr class="border-t text-center">
-                        <td class="p-3 text-xs text-gray-500">${row.Time || 'TBD'} <br> ${row.Court || 'Court 1'}</td>
-                        <td class="p-3 font-bold">${appState.teams[row.HomeID]?.name || row.Home || row.HomeID}</td>
-                        <td class="p-3 font-bold">${appState.teams[row.AwayID]?.name || row.Away || row.AwayID}</td>
-                    </tr>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:border-amber-400 transition">
+                        <div class="flex-1 text-center">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">${row.Time || 'TBD'}</div>
+                            <div class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded inline-block mt-1">${row.Court || 'Court 1'}</div>
+                        </div>
+                        <div class="flex-[3] flex justify-between items-center px-6">
+                            <div class="font-bold text-lg text-slate-800">${appState.teams[row.HomeID]?.name || row.Home || row.HomeID}</div>
+                            <div class="text-slate-300 font-black italic mx-4">VS</div>
+                            <div class="font-bold text-lg text-slate-800">${appState.teams[row.AwayID]?.name || row.Away || row.AwayID}</div>
+                        </div>
+                    </div>
                 `).join("");
         }
 
