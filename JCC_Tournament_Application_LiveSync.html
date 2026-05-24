@@ -153,7 +153,7 @@
     </main>
 
     <script>
-        // SPREADSHEET KEY AND CONFIRMED TAB CONFIGURATIONS
+        // TARGET SPREADSHEET CONFIGURATION
         const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
         const GID_TEAMS = '0';          
         const GID_SCHEDULES = '862932346';  
@@ -187,28 +187,32 @@
                 if(!res.ok) return null; 
                 return await res.text();
             } catch (e) {
-                console.error("Target resource fetch drop:", url);
+                console.error("Fetch drop warning for asset url:", url);
                 return null; 
             }
         }
 
         async function fetchLiveSheetData() {
-            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Syncing...`;
+            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...`;
             
             const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_TEAMS}`;
             const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SCHEDULES}`;
             const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_ROSTERS}`;
             const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SPONSORS}`;
 
-            // FIXED REFERENCE CALL HERE
-            const [teamsData, schedulesData, rostersData, sponsorsData] = await Promise.all([
-                fetchCSV(urlTeams), fetchCSV(urlSchedules), fetchCSV(urlRosters), fetchCSV(urlSponsors)
+            // Phase 1: Core Engine Streams (Must succeed)
+            const [teamsData, schedulesData] = await Promise.all([
+                fetchCSV(urlTeams), fetchCSV(urlSchedules)
             ]);
 
             if (teamsData === null || schedulesData === null) {
                 document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Interrupted`;
                 return;
             }
+
+            // Phase 2: Accessory Streams (Isolated so they can fail gracefully without breaking the app)
+            const rostersData = await fetchCSV(urlRosters);
+            const sponsorsData = await fetchCSV(urlSponsors);
 
             parseTournamentDatabase(teamsData, schedulesData, rostersData, sponsorsData);
         }
