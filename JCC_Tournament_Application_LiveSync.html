@@ -17,16 +17,15 @@
     <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             
-            <div class="flex items-center gap-4 self-start md:self-auto">
-                <div class="h-16 w-16 bg-white rounded-lg p-1 shadow-md border border-blue-800 flex items-center justify-center overflow-hidden">
-                    <img src="https://drive.google.com/uc?export=view&id=1-S3zhyyGoKPD_jMzpyRrbdwHVZIhaRge" alt="JCC Basketball Logo" class="max-h-full max-w-full object-contain" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black tracking-tight leading-none uppercase">JCC Basketball</h1>
-                    <p class="text-sm font-semibold tracking-wider text-blue-300 uppercase mt-1">2026 Season</p>
-                </div>
-            </div>
-            
+<div class="flex items-center gap-4 self-start md:self-auto">
+    <div class="h-16 w-16 bg-white rounded-lg p-1 shadow-md border border-blue-800 flex items-center justify-center overflow-hidden">
+        <img id="mainAppLogo" src="Logo.jpg" alt="JCC Basketball Logo" class="max-h-full max-w-full object-contain rounded" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
+    </div>
+    <div>
+        <h1 class="text-2xl font-black tracking-tight leading-none uppercase">JCC Basketball</h1>
+        <p class="text-sm font-semibold tracking-wider text-blue-300 uppercase mt-1">2026 Season</p>
+    </div>
+</div>            
             <div class="flex items-center gap-3">
                 <span id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting...
@@ -125,7 +124,7 @@
                             <h3 class="font-bold text-lg text-gray-800 mt-3 group-hover:text-blue-700 transition">Adult Division Rules</h3>
                             <p class="text-sm text-gray-500 mt-2">View gameplay rules, timing parameters, substitutions guidelines, and code of ethics provisions for adult teams.</p>
                         </div>
-                        <a href="YOUR_GOOGLE_DOC_URL_HERE" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Adult Manual</a>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Adult Manual</a>
                     </div>
 
                     <div class="border border-gray-200 hover:border-blue-400 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between transition group">
@@ -134,7 +133,7 @@
                             <h3 class="font-bold text-lg text-gray-800 mt-3 group-hover:text-blue-700 transition">Youth Division Rules</h3>
                             <p class="text-sm text-gray-500 mt-2">Review standard youth tournament conditions, game length alterations, defensive rules restrictions, and sportsmanship goals.</p>
                         </div>
-                        <a href="YOUR_GOOGLE_DOC_URL_HERE" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Youth Manual</a>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Youth Manual</a>
                     </div>
 
                     <div class="border border-gray-200 hover:border-blue-400 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between transition group">
@@ -143,7 +142,7 @@
                             <h3 class="font-bold text-lg text-gray-800 mt-3 group-hover:text-blue-700 transition">Kids Division Rules</h3>
                             <p class="text-sm text-gray-500 mt-2">Check game run configurations, rim heights tracking parameters, customized foul rulebooks, and equal rotation procedures.</p>
                         </div>
-                        <a href="YOUR_GOOGLE_DOC_URL_HERE" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Kids Manual</a>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition shadow-sm">📄 Open Kids Manual</a>
                     </div>
                 </div>
             </div>
@@ -161,7 +160,6 @@
     </main>
 
     <script>
-        // Set fixed structural Sheet ID
         const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
 
         let appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
@@ -188,18 +186,18 @@
         async function fetchCSV(url) {
             try {
                 const res = await fetch(url);
-                if(!res.ok) return ""; 
+                if(!res.ok) return null; 
                 return await res.text();
             } catch (e) {
-                console.warn("Fetch exception bypassed:", url);
-                return ""; 
+                console.error("Data source unreachable:", url);
+                return null; 
             }
         }
 
         async function fetchLiveSheetData() {
-            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Syncing Sheets...`;
+            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Connecting...`;
             
-            // GitHub Pages Optimized Endpoint Links to completely bypass CORS security restrictions
+            // Standard published fallback loops
             const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=0`;
             const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=1384061596`;
             const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=546342898`;
@@ -210,8 +208,8 @@
             const rostersData = await fetchCSV(urlRosters);
             const sponsorsData = await fetchCSV(urlSponsors);
 
-            if (!teamsData && !schedulesData) {
-                document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Link Interrupted`;
+            if (teamsData === null || schedulesData === null) {
+                document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Sync Interrupted`;
                 return;
             }
 
@@ -235,9 +233,9 @@
                     if(ck === 'teamid' || ck === 'teamnumber') tid = row[key].trim();
                     if(ck === 'teamname' || ck === 'team') tname = row[key].trim();
                 }
-                if(div.includes("Adult")) div = "Adult";
-                if(div.includes("Youth")) div = "Youth";
-                if(div.includes("Kids")) div = "Kids";
+                if(div.toLowerCase().includes("adult")) div = "Adult";
+                if(div.toLowerCase().includes("youth")) div = "Youth";
+                if(div.toLowerCase().includes("kids")) div = "Kids";
 
                 if(div && tid && tname) {
                     appState.teams[div][tid] = tname;
@@ -247,28 +245,28 @@
 
             // 2. Process Schedules
             schedulesRaw.forEach((row, i) => {
-                let div = "", mid = `G${i}`, time = "TBD", loc = "Court", hid = "", aid = "", hsc = null, asc = null;
+                let div = "", mid = `G${i}`, time = "", loc = "Court", hid = "", aid = "", hsc = null, asc = null;
                 for(let key in row) {
                     let ck = cleanKey(key);
-                    if(ck === 'division') div = row[key].trim();
-                    if(ck === 'matchid' || ck === 'gameid') mid = row[key].trim();
+                    if(ck === 'division' || ck === 'hierarchy') div = row[key].trim();
+                    if(ck === 'matchid' || ck === 'gameid' || ck === 'sngameid') mid = row[key].trim();
                     if(ck === 'time') time = row[key].trim();
                     if(ck === 'location' || ck === 'court') loc = row[key].trim();
                     if(ck === 'homeid' || ck === 'home' || ck === 'hometeam') hid = row[key].trim();
-                    if(ck === 'awayid' || ck === 'away' || ck === 'visitor') aid = row[key].trim();
+                    if(ck === 'awayid' || ck === 'away' || ck === 'visitor' || ck === 'visitingteam') aid = row[key].trim();
                     if(ck === 'homescore') hsc = row[key] !== "" ? parseInt(row[key], 10) : null;
                     if(ck === 'awayscore') asc = row[key] !== "" ? parseInt(row[key], 10) : null;
                 }
-                if(div.includes("Adult")) div = "Adult";
-                if(div.includes("Youth")) div = "Youth";
-                if(div.includes("Kids")) div = "Kids";
+                if(div.toLowerCase().includes("adult")) div = "Adult";
+                if(div.toLowerCase().includes("youth")) div = "Youth";
+                if(div.toLowerCase().includes("kids")) div = "Kids";
 
                 if(div && hid && aid) {
                     let foundHomeId = findTeamIdByName(div, hid);
                     let foundAwayId = findTeamIdByName(div, aid);
 
                     appState.schedules[div].push({
-                        id: mid, time: time, location: loc,
+                        id: mid, time: time || "TBD", location: loc,
                         homeId: foundHomeId, awayId: foundAwayId,
                         homeScore: isNaN(hsc) ? null : hsc, awayScore: isNaN(asc) ? null : asc
                     });
