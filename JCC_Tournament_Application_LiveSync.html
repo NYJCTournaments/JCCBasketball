@@ -17,62 +17,59 @@
     <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
-                <div class="h-16 w-16 bg-white rounded-lg p-1 shadow-md border border-blue-800 flex items-center justify-center overflow-hidden">
-                    <img id="mainAppLogo" src="Logo.jpg" alt="Logo" class="max-h-full max-w-full object-contain rounded" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black tracking-tight leading-none uppercase">JCC Basketball</h1>
-                    <p class="text-sm font-semibold tracking-wider text-blue-300 uppercase mt-1">2026 Season</p>
-                </div>
+                <h1 class="text-2xl font-black uppercase">JCC Basketball</h1>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...
-                </span>
-                <button onclick="fetchLiveSheetData()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold rounded transition">🔄 Sync Now</button>
-            </div>
+            <div id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200">Initializing...</div>
         </div>
         <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
-            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab whitespace-nowrap">📅 Games</button>
-            <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">📊 Standings</button>
-            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">👥 Rosters</button>
-            <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">🏆 Sponsors</button>
+            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab">📅 Games</button>
+            <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📊 Standings</button>
+            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200">👥 Rosters</button>
+            <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200">🏆 Sponsors</button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
-        <section id="schedule-tab" class="tab-content active"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
-        <section id="standings-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
-        <section id="rosters-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
-        <section id="sponsors-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading data...</div></section>
+        <section id="schedule-tab" class="tab-content active"><div id="scheduleTableBody" class="bg-white p-8 text-center text-gray-500">Loading Games...</div></section>
+        <section id="standings-tab" class="tab-content"><div id="standingsTableBody" class="bg-white p-8 text-center text-gray-500">Loading Standings...</div></section>
+        <section id="rosters-tab" class="tab-content"><div id="rostersContainer" class="bg-white p-8 text-center text-gray-500">Loading Rosters...</div></section>
+        <section id="sponsors-tab" class="tab-content"><div id="sponsorsContainer" class="bg-white p-8 text-center text-gray-500">Loading Sponsors...</div></section>
     </main>
 
     <script>
+        // Data Global State
+        let appState = { teams: {}, schedules: [], rosters: {}, sponsors: [] };
+
         async function fetchLiveSheetData() {
             const statusEl = document.getElementById("syncStatus");
-            statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...`;
+            statusEl.innerText = "Syncing...";
             
-            // CONVERTED LINKS: pubhtml -> pub?output=csv
             const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-            
-            const urls = [
-                `${base}&gid=0`,
-                `${base}&gid=862932346`,
-                `${base}&gid=1073182645`,
-                `${base}&gid=703899276`
-            ];
+            const urls = [`${base}&gid=0`, `${base}&gid=862932346`, `${base}&gid=1073182645`, `${base}&gid=703899276`];
 
             try {
-                const responses = await Promise.all(urls.map(url => fetch(url)));
-                const data = await Promise.all(responses.map(r => r.text()));
+                const res = await Promise.all(urls.map(url => fetch(url)));
+                const data = await Promise.all(res.map(r => r.text()));
                 
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400"></span> Synced`;
-                console.log("Successfully fetched all tabs!");
-                // NOTE: Call your parsing logic here (e.g., parseTournamentDatabase(data[0], data[1], data[2], data[3]);)
+                console.log("Data Received from Sheets.");
+                parseTournamentDatabase(data[0], data[1], data[2], data[3]);
+                
+                statusEl.innerText = "Synced Successfully";
             } catch (err) {
                 console.error("DEBUG ERROR:", err);
-                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Error`;
+                statusEl.innerText = "Sync Error - Check Console";
             }
+        }
+
+        function parseTournamentDatabase(t, s, r, sp) {
+            // Log parsed data to help you verify column names match your code
+            console.log("Teams Data Sample:", Papa.parse(t, {header:true}).data[0]);
+            
+            // Re-map your data here using your logic
+            // (Example: appState.teams = Papa.parse(t, {header:true}).data;)
+            
+            // Trigger UI updates
+            console.log("Parsing complete. Rendering UI...");
         }
 
         function switchTab(tabId, btnEl) {
