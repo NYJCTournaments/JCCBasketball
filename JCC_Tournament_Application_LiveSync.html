@@ -16,9 +16,9 @@
 
     <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4 self-start md:self-auto">
+            <div class="flex items-center gap-4">
                 <div class="h-16 w-16 bg-white rounded-lg p-1 shadow-md border border-blue-800 flex items-center justify-center overflow-hidden">
-                    <img id="mainAppLogo" src="Logo.jpg" alt="JCC Basketball Logo" class="max-h-full max-w-full object-contain rounded" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
+                    <img id="mainAppLogo" src="Logo.jpg" alt="Logo" class="max-h-full max-w-full object-contain rounded" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
                 </div>
                 <div>
                     <h1 class="text-2xl font-black tracking-tight leading-none uppercase">JCC Basketball</h1>
@@ -27,484 +27,66 @@
             </div>
             <div class="flex items-center gap-3">
                 <span id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting...
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Initializing...
                 </span>
                 <button onclick="fetchLiveSheetData()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold rounded transition">🔄 Sync Now</button>
             </div>
         </div>
-        
         <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
-            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab whitespace-nowrap">📅 Games & Scores</button>
+            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab whitespace-nowrap">📅 Games</button>
             <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">📊 Standings</button>
-            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">👥 Team Rosters</button>
-            <button onclick="switchTab('rules-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">📜 Rules & Format</button>
+            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">👥 Rosters</button>
             <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">🏆 Sponsors</button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
-        <div id="divisionFilterBar" class="mb-6 bg-white p-4 rounded-xl shadow-sm flex items-center justify-between border border-gray-200">
-            <label class="font-bold text-gray-700 text-sm tracking-wider uppercase">Select Division:</label>
-            <select id="divisionSelector" onchange="renderActiveViews()" class="bg-gray-50 border border-gray-300 rounded-lg p-2 font-semibold text-blue-900 focus:ring-2 focus:ring-blue-500">
-                <option value="Adult">Adult Division</option>
-                <option value="Youth">Youth Division</option>
-                <option value="Kids">Kids Division</option>
-            </select>
-        </div>
-
-        <section id="schedule-tab" class="tab-content active">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
-                                <th class="p-4">Time / Court</th>
-                                <th class="p-4">Home Team</th>
-                                <th class="p-4 text-center">Score</th>
-                                <th class="p-4">Away Team</th>
-                                <th class="p-4 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scheduleTableBody">
-                            <tr><td colspan="5" class="p-8 text-center text-gray-500">Initializing live sync data metrics...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section id="standings-tab" class="tab-content">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
-                                <th class="p-4 w-12 text-center">Rank</th>
-                                <th class="p-4">Team</th>
-                                <th class="p-4 text-center">GP</th>
-                                <th class="p-4 text-center">W</th>
-                                <th class="p-4 text-center">L</th>
-                                <th class="p-4 text-center text-blue-600 font-bold">Win Pts</th>
-                                <th class="p-4 text-center">PF</th>
-                                <th class="p-4 text-center">PA</th>
-                                <th class="p-4 text-center font-bold">PD</th>
-                            </tr>
-                        </thead>
-                        <tbody id="standingsTableBody">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section id="rosters-tab" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-800 border-b pb-2 mb-3 text-xs uppercase tracking-wider text-gray-400">Teams</h3>
-                    <div id="rosterTeamList" class="space-y-1 max-h-96 overflow-y-auto"></div>
-                </div>
-                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 id="activeRosterTitle" class="font-bold text-lg text-blue-900 mb-4 border-b pb-2">Select a team to view player roster</h3>
-                    <ul id="rosterPlayerList" class="list-disc pl-5 space-y-1 text-gray-700 font-medium"></ul>
-                </div>
-            </div>
-        </section>
-
-        <section id="rules-tab" class="tab-content">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Tournament Rules, General Regulations & Guidelines</h2>
-                <p class="text-sm text-gray-500 mb-6">Official manuals and playbook specifications for tournament configurations.</p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between">
-                        <div>
-                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-full">League Playbook</span>
-                            <h3 class="font-bold text-lg text-gray-800 mt-3">Adult Division Rules</h3>
-                            <p class="text-sm text-gray-500 mt-2">View gameplay rules, timing parameters, substitutions guidelines, and code of ethics provisions for adult teams.</p>
-                        </div>
-                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 Open Manual</a>
-                    </div>
-                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between">
-                        <div>
-                            <span class="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-full">Development</span>
-                            <h3 class="font-bold text-lg text-gray-800 mt-3">Youth Division Rules</h3>
-                            <p class="text-sm text-gray-500 mt-2">Review standard youth tournament conditions, game length alterations, defensive rules restrictions, and sportsmanship goals.</p>
-                        </div>
-                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 Open Manual</a>
-                    </div>
-                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between">
-                        <div>
-                            <span class="text-xs font-bold text-green-600 uppercase tracking-wider bg-green-50 px-2.5 py-1 rounded-full">Junior Circuit</span>
-                            <h3 class="font-bold text-lg text-gray-800 mt-3">Kids Division Rules</h3>
-                            <p class="text-sm text-gray-500 mt-2">Check game run configurations, rim heights tracking parameters, customized foul rulebooks, and equal rotation procedures.</p>
-                        </div>
-                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 Open Manual</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="sponsors-tab" class="tab-content">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-xl font-bold text-gray-800 mb-2">Our Proud Tournament Sponsors</h2>
-                <div id="sponsorsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-4">
-                    </div>
-            </div>
-        </section>
+        <section id="schedule-tab" class="tab-content active"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading schedule...</div></section>
+        <section id="standings-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading standings...</div></section>
+        <section id="rosters-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading rosters...</div></section>
+        <section id="sponsors-tab" class="tab-content"><div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">Loading sponsors...</div></section>
     </main>
 
     <script>
-        // TARGET SPREADSHEET CONFIGURATION
-        const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
-        const GID_TEAMS = '0';          
-        const GID_SCHEDULES = '862932346';  
-        const GID_ROSTERS = '1073182645';    
-        const GID_SPONSORS = '703899276';   
+        const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc';
 
-        let appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
-        let selectedTeamKey = null;
+        async function fetchLiveSheetData() {
+            const statusEl = document.getElementById("syncStatus");
+            statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...`;
+            
+            const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv`;
+            const urls = [
+                `${base}&gid=0`,
+                `${base}&gid=862932346`,
+                `${base}&gid=1073182645`,
+                `${base}&gid=703899276`
+            ];
+
+            try {
+                const responses = await Promise.all(urls.map(url => fetch(url)));
+                
+                // Detailed debug logging
+                responses.forEach((res, i) => {
+                    console.log(`Tab ${i} Fetch Status: ${res.status} | URL: ${res.url}`);
+                    if (!res.ok) throw new Error(`Tab ${i} returned status ${res.status}`);
+                });
+
+                const data = await Promise.all(responses.map(r => r.text()));
+                
+                console.log("Data successfully fetched. Processing...");
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400"></span> Synced`;
+                // Trigger your parse/render functions here
+            } catch (err) {
+                console.error("DEBUG ERROR:", err);
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Error (Check Console F12)`;
+            }
+        }
 
         function switchTab(tabId, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
             document.getElementById(tabId).classList.add('active');
             btnEl.classList.add('active-tab');
-
-            const filterBar = document.getElementById("divisionFilterBar");
-            if(tabId === 'sponsors-tab' || tabId === 'rules-tab') {
-                filterBar.classList.add('hidden');
-            } else {
-                filterBar.classList.remove('hidden');
-            }
-        }
-
-        function cleanKey(k) {
-            return k ? k.toString().replace(/[\s_\-\/]/g, '').toLowerCase() : '';
-        }
-
-        async function fetchCSV(url) {
-            try {
-                const res = await fetch(url);
-                if(!res.ok) return null; 
-                return await res.text();
-            } catch (e) {
-                console.error("Fetch drop warning for asset url:", url);
-                return null; 
-            }
-        }
-
-        async function fetchLiveSheetData() {
-            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Syncing...`;
-            
-            const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_TEAMS}`;
-            const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SCHEDULES}`;
-            const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_ROSTERS}`;
-            const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SPONSORS}`;
-
-            // Phase 1: Core Engine Streams (Must succeed)
-            const [teamsData, schedulesData] = await Promise.all([
-                fetchCSV(urlTeams), fetchCSV(urlSchedules)
-            ]);
-
-            if (teamsData === null || schedulesData === null) {
-                document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Interrupted`;
-                return;
-            }
-
-            // Phase 2: Accessory Streams (Isolated so they can fail gracefully without breaking the app)
-            const rostersData = await fetchCSV(urlRosters);
-            const sponsorsData = await fetchCSV(urlSponsors);
-
-            parseTournamentDatabase(teamsData, schedulesData, rostersData, sponsorsData);
-        }
-
-        function parseTournamentDatabase(teamsCSV, schedulesCSV, rostersCSV, sponsorsCSV) {
-            appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
-
-            const teamsRaw = Papa.parse(teamsCSV, { header: true, skipEmptyLines: true }).data;
-            const schedulesRaw = Papa.parse(schedulesCSV, { header: true, skipEmptyLines: true }).data;
-            const rostersRaw = rostersCSV ? Papa.parse(rostersCSV, { header: true, skipEmptyLines: true }).data : [];
-            const sponsorsRaw = sponsorsCSV ? Papa.parse(sponsorsCSV, { header: true, skipEmptyLines: true }).data : [];
-
-            // 1. Process Teams
-            teamsRaw.forEach(row => {
-                if(!row) return;
-                let div = "", tid = "", tname = "";
-                for(let key in row) {
-                    let ck = cleanKey(key);
-                    if(ck === 'division' && row[key]) div = row[key].toString().trim();
-                    if((ck === 'teamid' || ck === 'teamnumber' || ck === 'id') && row[key]) tid = row[key].toString().trim();
-                    if((ck === 'teamname' || ck === 'team') && row[key]) tname = row[key].toString().trim();
-                }
-                
-                if(div) {
-                    if(div.toLowerCase().includes("adult")) div = "Adult";
-                    else if(div.toLowerCase().includes("youth")) div = "Youth";
-                    else if(div.toLowerCase().includes("kids")) div = "Kids";
-                    else div = "Adult";
-                } else {
-                    div = "Adult";
-                }
-
-                if(tid && tname) {
-                    appState.teams[div][tid] = tname;
-                    appState.rosters[tid] = [];
-                }
-            });
-
-            // 2. Process Schedules
-            schedulesRaw.forEach((row, i) => {
-                if(!row) return;
-                let div = "", mid = `G${i}`, time = "TBD", loc = "Court 1", hid = "", aid = "", hsc = null, asc = null;
-                
-                for(let key in row) {
-                    let ck = cleanKey(key);
-                    if((ck === 'division' || ck === 'hierarchy') && row[key]) div = row[key].toString().trim();
-                    if((ck === 'matchid' || ck === 'gameid') && row[key]) mid = row[key].toString().trim();
-                    if(ck === 'time' && row[key]) time = row[key].toString().trim();
-                    if((ck === 'location' || ck === 'court') && row[key]) loc = row[key].toString().trim();
-                    if((ck === 'homeid' || ck === 'home') && row[key]) hid = row[key].toString().trim();
-                    if((ck === 'awayid' || ck === 'away') && row[key]) aid = row[key].toString().trim();
-                    if((ck === 'homescore') && row[key] !== "" && row[key] !== null) hsc = parseInt(row[key], 10);
-                    if((ck === 'awayscore') && row[key] !== "" && row[key] !== null) asc = parseInt(row[key], 10);
-                }
-
-                if(hid && aid) {
-                    if(div) {
-                        if(div.toLowerCase().includes("adult")) div = "Adult";
-                        else if(div.toLowerCase().includes("youth")) div = "Youth";
-                        else if(div.toLowerCase().includes("kids")) div = "Kids";
-                        else div = autoDetectDivision(hid, aid);
-                    } else {
-                        div = autoDetectDivision(hid, aid);
-                    }
-
-                    appState.schedules[div].push({
-                        id: mid, time: time, location: loc,
-                        homeId: hid, awayId: aid,
-                        homeScore: isNaN(hsc) ? null : hsc, awayScore: isNaN(asc) ? null : asc
-                    });
-                }
-            });
-
-            // 3. Process Rosters
-            rostersRaw.forEach(row => {
-                if(!row) return;
-                let tid = "", pname = "";
-                for(let key in row) {
-                    let ck = cleanKey(key);
-                    if((ck === 'teamid' || ck === 'teamname' || ck === 'team') && row[key]) tid = row[key].toString().trim();
-                    if((ck === 'playername' || ck === 'player') && row[key]) pname = row[key].toString().trim();
-                }
-                if(tid && pname) {
-                    let resolvedId = findTeamIdByName(null, tid);
-                    if(!appState.rosters[resolvedId]) appState.rosters[resolvedId] = [];
-                    appState.rosters[resolvedId].push(pname);
-                }
-            });
-
-            // 4. Process Sponsors
-            sponsorsRaw.forEach(row => {
-                if(!row) return;
-                let name = "", level = "Sponsor", logo = "", web = "";
-                for(let key in row) {
-                    let ck = cleanKey(key);
-                    if((ck === 'sponsorname' || ck === 'name' || ck === 'company') && row[key]) name = row[key].toString().trim();
-                    if((ck === 'sponsorlevel' || ck === 'level' || ck === 'tier') && row[key]) level = row[key].toString().trim();
-                    if((ck === 'logourl' || ck === 'logo') && row[key]) logo = row[key].toString().trim();
-                    if((ck === 'website' || ck === 'url' || ck === 'link') && row[key]) web = row[key].toString().trim();
-                }
-                if(name) {
-                    appState.sponsors.push({ name: name, level: level, logo: logo, web: web });
-                }
-            });
-
-            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400"></span> Live Data Synced`;
-            renderActiveViews();
-            renderSponsorsView();
-        }
-
-        function autoDetectDivision(idA, idB) {
-            let cleanA = idA ? idA.toLowerCase() : '';
-            let cleanB = idB ? idB.toLowerCase() : '';
-            for (let d of ['Adult', 'Youth', 'Kids']) {
-                if (appState.teams[d]) {
-                    for (let id in appState.teams[d]) {
-                        if (id.toLowerCase() === cleanA || appState.teams[d][id].toLowerCase() === cleanA || id.toLowerCase() === cleanB || appState.teams[d][id].toLowerCase() === cleanB) return d;
-                    }
-                }
-            }
-            return "Adult";
-        }
-
-        function findTeamIdByName(division, identifier) {
-            if(!identifier) return '';
-            let cleanId = identifier.toLowerCase();
-            if (division && appState.teams[division] && appState.teams[division][identifier]) return identifier;
-            let searchDivs = division ? [division] : ['Adult', 'Youth', 'Kids'];
-            for (let d of searchDivs) {
-                if (appState.teams[d]) {
-                    for (let id in appState.teams[d]) {
-                        if (id.toLowerCase() === cleanId || appState.teams[d][id].toLowerCase() === cleanId) {
-                            return id;
-                        }
-                    }
-                }
-            }
-            return identifier;
-        }
-
-        function renderActiveViews() {
-            const div = document.getElementById("divisionSelector").value;
-            renderSchedule(div);
-            renderStandings(div);
-            renderRostersSidebar(div);
-        }
-
-        function renderSchedule(division) {
-            const tbody = document.getElementById("scheduleTableBody");
-            tbody.innerHTML = "";
-            const matches = appState.schedules[division] || [];
-
-            if(matches.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-sm text-gray-500 font-medium">⚠️ No matches found for the ${division} division view.</td></tr>`;
-                return;
-            }
-
-            matches.forEach(match => {
-                const homeName = appState.teams[division][match.homeId] || match.homeId;
-                const awayName = appState.teams[division][match.awayId] || match.awayId;
-                const isFinal = match.homeScore !== null && match.awayScore !== null;
-
-                const tr = document.createElement("tr");
-                tr.className = "border-b border-gray-200 text-sm hover:bg-gray-50 transition";
-                tr.innerHTML = `
-                    <td class="p-4">
-                        <div class="font-bold text-gray-800">${match.time}</div>
-                        <div class="text-xs text-gray-500">${match.location}</div>
-                    </td>
-                    <td class="p-4 font-semibold text-gray-700">${homeName}</td>
-                    <td class="p-4 text-center font-mono font-bold text-base bg-gray-50/50 w-28">
-                        ${isFinal ? `${match.homeScore} - ${match.awayScore}` : `<span class="text-xs text-gray-400 font-sans">VS</span>`}
-                    </td>
-                    <td class="p-4 font-semibold text-gray-700">${awayName}</td>
-                    <td class="p-4 text-center">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isFinal ? 'bg-green-100 text-green-800':'bg-gray-100 text-gray-600'}">
-                            ${isFinal ? 'Final' : 'Scheduled'}
-                        </span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderStandings(division) {
-            const tbody = document.getElementById("standingsTableBody");
-            tbody.innerHTML = "";
-            
-            const teamsMap = appState.teams[division] || {};
-            const matches = appState.schedules[division] || [];
-            let stats = {};
-
-            for (const id in teamsMap) {
-                stats[id] = { id: id, name: teamsMap[id], gp: 0, wins: 0, losses: 0, pts: 0, pf: 0, pa: 0, pd: 0, h2h: {} };
-            }
-
-            matches.forEach(m => {
-                if (m.homeScore !== null && m.awayScore !== null) {
-                    const hs = m.homeScore; const as = m.awayScore;
-                    if (stats[m.homeId] && stats[m.awayId]) {
-                        stats[m.homeId].gp++; stats[m.awayId].gp++;
-                        stats[m.homeId].pf += hs; stats[m.homeId].pa += as;
-                        stats[m.awayId].pf += as; stats[m.awayId].pa += hs;
-
-                        if (hs > as) {
-                            stats[m.homeId].wins++; stats[m.homeId].pts += 2; stats[m.awayId].losses++;
-                            stats[m.homeId].h2h[m.awayId] = 'W'; stats[m.awayId].h2h[m.homeId] = 'L';
-                        } else {
-                            stats[m.awayId].wins++; stats[m.awayId].pts += 2; stats[m.homeId].losses++;
-                            stats[m.awayId].h2h[m.homeId] = 'W'; stats[m.homeId].h2h[m.awayId] = 'L';
-                        }
-                    }
-                }
-            });
-
-            for (const id in stats) { stats[id].pd = stats[id].pf - stats[id].pa; }
-            let leaderboard = Object.values(stats);
-
-            leaderboard.sort((a, b) => {
-                if (b.pts !== a.pts) return b.pts - a.pts;
-                if (a.h2h && b.id && a.h2h[b.id] === 'W') return -1;
-                if (a.h2h && b.id && a.h2h[b.id] === 'L') return 1;
-                if (b.pd !== a.pd) return b.pd - a.pd;
-                return 0;
-            });
-
-            if (leaderboard.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400 text-xs">No active teams registered to rank.</td></tr>`;
-                return;
-            }
-
-            leaderboard.forEach((team, idx) => {
-                const tr = document.createElement("tr");
-                tr.className = "border-b border-gray-200 text-sm hover:bg-gray-50 transition";
-                tr.innerHTML = `
-                    <td class="p-4 text-center font-bold text-gray-500">${idx + 1}</td>
-                    <td class="p-4 font-bold text-gray-900">${team.name}</td>
-                    <td class="p-4 text-center">${team.gp}</td>
-                    <td class="p-4 text-center text-green-600">${team.wins}</td>
-                    <td class="p-4 text-center text-red-600">${team.losses}</td>
-                    <td class="p-4 text-center font-black text-blue-600 bg-blue-50">${team.pts}</td>
-                    <td class="p-4 text-center text-gray-500">${team.pf}</td>
-                    <td class="p-4 text-center text-gray-500">${team.pa}</td>
-                    <td class="p-4 text-center font-bold ${team.pd >= 0 ? 'text-green-600':'text-red-600'}">${team.pd > 0 ? '+'+team.pd : team.pd}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderRostersSidebar(division) {
-            const container = document.getElementById("rosterTeamList");
-            container.innerHTML = "";
-            const teams = appState.teams[division] || {};
-
-            for (const key in teams) {
-                const btn = document.createElement("button");
-                btn.className = `w-full text-left px-3 py-2 text-sm rounded-lg block transition truncate ${selectedTeamKey === key ? 'bg-blue-100 text-blue-900 font-bold':'text-gray-700 hover:bg-gray-100'}`;
-                btn.innerText = teams[key];
-                btn.onclick = () => {
-                    selectedTeamKey = key;
-                    renderRostersSidebar(division);
-                    const players = appState.rosters[key] || [];
-                    document.getElementById("activeRosterTitle").innerText = `${teams[key]} Roster`;
-                    document.getElementById("rosterPlayerList").innerHTML = players.length > 0 
-                        ? players.map(p => `<li>${p}</li>`).join("")
-                        : `<span class="text-sm text-gray-400 font-normal italic">No roster data available.</span>`;
-                };
-                container.appendChild(btn);
-            }
-        }
-
-        function renderSponsorsView() {
-            const container = document.getElementById("sponsorsContainer");
-            if(appState.sponsors.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center text-gray-400 text-xs italic">Sponsor data list empty.</div>`;
-                return;
-            }
-
-            container.innerHTML = appState.sponsors.map(sp => {
-                const imgPlaceholder = `<div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center font-black text-blue-700 text-xl uppercase">${sp.name.slice(0,2)}</div>`;
-                const displayLogo = sp.logo ? `<img src="${sp.logo}" alt="${sp.name}" class="max-h-16 max-w-full object-contain mx-auto" onerror="this.outerHTML='${imgPlaceholder}'">` : imgPlaceholder;
-                const wrapperOpen = sp.web ? `<a href="${sp.web}" target="_blank" class="block bg-gray-50 border border-gray-200 p-4 rounded-xl text-center hover:shadow-md hover:border-blue-300 transition group">` : `<div class="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">`;
-                const wrapperClose = sp.web ? `</a>` : `</div>`;
-
-                return `
-                    ${wrapperOpen}
-                        <div class="h-20 flex items-center justify-center mb-2">${displayLogo}</div>
-                        <h4 class="font-bold text-gray-800 text-sm truncate tracking-tight">${sp.name}</h4>
-                        <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800">${sp.level}</span>
-                    ${wrapperClose}
-                `;
-            }).join("");
         }
 
         window.onload = fetchLiveSheetData;
