@@ -14,51 +14,50 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-900">
 
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <h1 class="text-2xl font-black uppercase">JCC Basketball</h1>
-            <div id="syncStatus" class="text-xs text-blue-300">Initializing...</div>
-        </div>
+    <header class="bg-blue-900 text-white shadow-md sticky top-0">
+        <div class="max-w-7xl mx-auto px-4 py-4"><h1 class="text-2xl font-black uppercase">JCC Basketball</h1></div>
         <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm">
             <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab">📅 Games</button>
             <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📊 Standings</button>
-            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200">👥 Rosters</button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
-        <section id="schedule-tab" class="tab-content active"><div id="scheduleTableBody" class="bg-white p-4"></div></section>
-        <section id="standings-tab" class="tab-content"><div id="standingsTableBody" class="bg-white p-4"></div></section>
-        <section id="rosters-tab" class="tab-content"><div id="rostersContainer" class="bg-white p-4"></div></section>
+        <section id="schedule-tab" class="tab-content active">
+            <table class="w-full bg-white shadow rounded-lg overflow-hidden">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-3">Home</th><th class="p-3">Away</th></tr></thead>
+                <tbody id="scheduleTableBody"></tbody>
+            </table>
+        </section>
+        <section id="standings-tab" class="tab-content">
+            <div id="standingsContent" class="bg-white p-4 shadow rounded-lg">Standings will appear here...</div>
+        </section>
     </main>
 
     <script>
-        let appState = { teams: {}, schedules: [], rosters: {} };
+        let appState = { teams: {}, schedules: [] };
 
         async function fetchLiveSheetData() {
             const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-            const urls = [`${base}&gid=0`, `${base}&gid=862932346`, `${base}&gid=1073182645`];
-
-            try {
-                const res = await Promise.all(urls.map(url => fetch(url)));
-                const data = await Promise.all(res.map(r => r.text()));
-                parseTournamentDatabase(data[0], data[1], data[2]);
-            } catch (err) { document.getElementById("syncStatus").innerText = "Sync Error"; }
+            const responses = await Promise.all([fetch(`${base}&gid=0`), fetch(`${base}&gid=862932346`)]);
+            const data = await Promise.all(responses.map(r => r.text()));
+            parseData(data[0], data[1]);
         }
 
-        function parseTournamentDatabase(tCSV, sCSV, rCSV) {
-            // 1. Parse Teams using your specific headers: Division, TeamID, TeamName
-            const teamsData = Papa.parse(tCSV, { header: true }).data;
-            teamsData.forEach(row => {
-                if (row.TeamID) {
-                    appState.teams[row.TeamID] = row.TeamName;
-                }
-            });
+        function parseData(tCSV, sCSV) {
+            const teams = Papa.parse(tCSV, {header:true}).data;
+            teams.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = r.TeamName; });
 
-            // 2. Simple Render Logic
-            const body = document.getElementById("scheduleTableBody");
-            body.innerHTML = "<pre>" + JSON.stringify(appState.teams, null, 2) + "</pre>";
-            document.getElementById("syncStatus").innerText = "Synced Successfully";
+            const schedules = Papa.parse(sCSV, {header:true}).data;
+            const tbody = document.getElementById("scheduleTableBody");
+            
+            // Build table rows
+            tbody.innerHTML = schedules.map(row => `
+                <tr class="border-t text-center">
+                    <td class="p-3 font-bold">${appState.teams[row.HomeID] || row.HomeID}</td>
+                    <td class="p-3 font-bold">${appState.teams[row.AwayID] || row.AwayID}</td>
+                </tr>
+            `).join("");
         }
 
         function switchTab(tabId, btnEl) {
