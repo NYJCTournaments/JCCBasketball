@@ -128,7 +128,7 @@
                     </div>
                     <div class="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col justify-between">
                         <div>
-                            <span class="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2 py-1 rounded-full">Developmental</span>
+                            <span class="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-full">Developmental</span>
                             <h3 class="font-bold text-lg text-gray-800 mt-3">Youth Rules</h3>
                             <p class="text-sm text-gray-500 mt-2">Modified pressure defenses, standard run time structures, and court configurations.</p>
                         </div>
@@ -228,16 +228,20 @@
                 let div = "", tid = "", tname = "";
                 for(let key in row) {
                     let ck = cleanKey(key);
-                    if(ck === 'division') div = row[key].trim();
-                    if(ck === 'teamid' || ck === 'teamnumber' || ck === 'id') tid = row[key].trim();
-                    if(ck === 'teamname' || ck === 'team') tname = row[key].trim();
+                    if(ck === 'division' && row[key]) div = row[key].trim();
+                    if((ck === 'teamid' || ck === 'teamnumber' || ck === 'id') && row[key]) tid = row[key].trim();
+                    if((ck === 'teamname' || ck === 'team') && row[key]) tname = row[key].trim();
                 }
                 
-                // Fallback normalizing
                 if(!div && tname) div = "Adult"; 
-                if(div.toLowerCase().includes("adult")) div = "Adult";
-                if(div.toLowerCase().includes("youth")) div = "Youth";
-                if(div.toLowerCase().includes("kids")) div = "Kids";
+                if(div) {
+                    if(div.toLowerCase().includes("adult")) div = "Adult";
+                    else if(div.toLowerCase().includes("youth")) div = "Youth";
+                    else if(div.toLowerCase().includes("kids")) div = "Kids";
+                    else div = "Adult";
+                } else {
+                    div = "Adult";
+                }
 
                 if(tid && tname) {
                     appState.teams[div][tid] = tname;
@@ -245,29 +249,29 @@
                 }
             });
 
-            // 2. Parse Complex Schedule Grids
+            // 2. Parse Schedule Grids safely
             schedulesRaw.forEach((row, i) => {
                 let div = "", time = "", loc = "Court 1", hid = "", aid = "", hsc = null, asc = null;
                 
                 for(let key in row) {
                     let ck = cleanKey(key);
-                    if(ck === 'division' || ck === 'hierarchy') div = row[key].trim();
-                    if(ck === 'time') time = row[key].trim();
-                    if(ck === 'location' || ck === 'court') loc = row[key].trim();
-                    if(['home', 'homeid', 'teama', 'team1'].includes(ck)) hid = row[key].trim();
-                    if(['away', 'awayid', 'visitor', 'teamb', 'team2'].includes(ck)) aid = row[key].trim();
-                    if(ck === 'homescore' || ck === 'scorea') hsc = row[key] !== "" ? parseInt(row[key], 10) : null;
-                    if(ck === 'awayscore' || ck === 'scoreb') asc = row[key] !== "" ? parseInt(row[key], 10) : null;
+                    if((ck === 'division' || ck === 'hierarchy') && row[key]) div = row[key].trim();
+                    if(ck === 'time' && row[key]) time = row[key].trim();
+                    if((ck === 'location' || ck === 'court') && row[key]) loc = row[key].trim();
+                    if(['home', 'homeid', 'teama', 'team1'].includes(ck) && row[key]) hid = row[key].trim();
+                    if(['away', 'awayid', 'visitor', 'teamb', 'team2'].includes(ck) && row[key]) aid = row[key].trim();
+                    if((ck === 'homescore' || ck === 'scorea') && row[key] !== "") hsc = parseInt(row[key], 10);
+                    if((ck === 'awayscore' || ck === 'scoreb') && row[key] !== "") asc = parseInt(row[key], 10);
                 }
 
                 if(hid && aid) {
-                    // Smart Division Matching Strategy
-                    if(!div || (!appState.teams[div] && div)) {
+                    if(!div) {
                         div = autoDetectDivision(hid, aid);
                     } else {
                         if(div.toLowerCase().includes("adult")) div = "Adult";
-                        if(div.toLowerCase().includes("youth")) div = "Youth";
-                        if(div.toLowerCase().includes("kids")) div = "Kids";
+                        else if(div.toLowerCase().includes("youth")) div = "Youth";
+                        else if(div.toLowerCase().includes("kids")) div = "Kids";
+                        else div = autoDetectDivision(hid, aid);
                     }
 
                     appState.schedules[div].push({
@@ -283,8 +287,8 @@
                 let tid = "", pname = "";
                 for(let key in row) {
                     let ck = cleanKey(key);
-                    if(['teamid', 'teamname', 'team'].includes(ck)) tid = row[key].trim();
-                    if(['playername', 'player'].includes(ck)) pname = row[key].trim();
+                    if(['teamid', 'teamname', 'team'].includes(ck) && row[key]) tid = row[key].trim();
+                    if(['playername', 'player'].includes(ck) && row[key]) pname = row[key].trim();
                 }
                 if(tid && pname) {
                     let resolved = matchGlobalTeamID(tid);
@@ -298,10 +302,10 @@
                 let name = "", level = "Partner", logo = "", web = "";
                 for(let key in row) {
                     let ck = cleanKey(key);
-                    if(['sponsorname', 'name', 'company'].includes(ck)) name = row[key].trim();
-                    if(['sponsorlevel', 'level', 'tier'].includes(ck)) level = row[key].trim();
-                    if(['logourl', 'logo'].includes(ck)) logo = row[key].trim();
-                    if(['website', 'url', 'link'].includes(ck)) web = row[key].trim();
+                    if(['sponsorname', 'name', 'company'].includes(ck) && row[key]) name = row[key].trim();
+                    if(['sponsorlevel', 'level', 'tier'].includes(ck) && row[key]) level = row[key].trim();
+                    if(['logourl', 'logo'].includes(ck) && row[key]) logo = row[key].trim();
+                    if(['website', 'url', 'link'].includes(ck) && row[key]) web = row[key].trim();
                 }
                 if(name) appState.sponsors.push({ name, level, logo, web });
             });
@@ -315,7 +319,7 @@
             for (let d of ['Adult', 'Youth', 'Kids']) {
                 if (appState.teams[d][idA] || appState.teams[d][idB]) return d;
             }
-            return "Adult"; // Safety default routing
+            return "Adult"; 
         }
 
         function matchGlobalTeamID(str) {
