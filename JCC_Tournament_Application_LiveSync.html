@@ -14,48 +14,50 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-900">
 
-    <header class="bg-blue-900 text-white shadow-md sticky top-0">
+    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4"><h1 class="text-2xl font-black uppercase">JCC Basketball</h1></div>
-        <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm">
+        <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
             <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab">📅 Games</button>
             <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📊 Standings</button>
+            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200">👥 Rosters</button>
+            <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200">🏆 Sponsors</button>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6">
         <section id="schedule-tab" class="tab-content active">
-            <table class="w-full bg-white shadow rounded-lg overflow-hidden">
-                <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-3">Home</th><th class="p-3">Away</th></tr></thead>
-                <tbody id="scheduleTableBody"></tbody>
-            </table>
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-3">Home Team</th><th class="p-3">Away Team</th></tr></thead>
+                    <tbody id="scheduleTableBody"></tbody>
+                </table>
+            </div>
         </section>
-        <section id="standings-tab" class="tab-content">
-            <div id="standingsContent" class="bg-white p-4 shadow rounded-lg">Standings will appear here...</div>
-        </section>
+        <section id="standings-tab" class="tab-content"><div id="standingsContent" class="p-4">Standings logic here...</div></section>
+        <section id="rosters-tab" class="tab-content"><div class="p-4">Rosters content...</div></section>
+        <section id="sponsors-tab" class="tab-content"><div class="p-4">Sponsors content...</div></section>
     </main>
 
     <script>
-        let appState = { teams: {}, schedules: [] };
+        let appState = { teams: {} };
 
         async function fetchLiveSheetData() {
             const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-            const responses = await Promise.all([fetch(`${base}&gid=0`), fetch(`${base}&gid=862932346`)]);
+            const urls = [`${base}&gid=0`, `${base}&gid=862932346`];
+            const responses = await Promise.all(urls.map(url => fetch(url)));
             const data = await Promise.all(responses.map(r => r.text()));
-            parseData(data[0], data[1]);
-        }
+            
+            // Parse Teams
+            Papa.parse(data[0], {header:true}).data.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = r.TeamName; });
 
-        function parseData(tCSV, sCSV) {
-            const teams = Papa.parse(tCSV, {header:true}).data;
-            teams.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = r.TeamName; });
-
-            const schedules = Papa.parse(sCSV, {header:true}).data;
+            // Parse Schedule
+            const schedules = Papa.parse(data[1], {header:true}).data;
             const tbody = document.getElementById("scheduleTableBody");
             
-            // Build table rows
             tbody.innerHTML = schedules.map(row => `
-                <tr class="border-t text-center">
-                    <td class="p-3 font-bold">${appState.teams[row.HomeID] || row.HomeID}</td>
-                    <td class="p-3 font-bold">${appState.teams[row.AwayID] || row.AwayID}</td>
+                <tr class="border-t">
+                    <td class="p-3 font-semibold">${appState.teams[row.HomeID] || row.Home || row.HomeID}</td>
+                    <td class="p-3 font-semibold">${appState.teams[row.AwayID] || row.Away || row.AwayID}</td>
                 </tr>
             `).join("");
         }
