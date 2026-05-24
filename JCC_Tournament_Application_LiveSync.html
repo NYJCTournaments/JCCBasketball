@@ -113,7 +113,7 @@
         <section id="rules-tab" class="tab-content">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Tournament Rules, General Regulations & Guidelines</h2>
-                <p class="text-sm text-gray-500 mb-6">Select a manual below to access complete regulations and format overviews via Google Docs.</p>
+                <p class="text-sm text-gray-500 mb-6">Official manuals and playbook specifications for tournament configurations.</p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="border border-gray-200 rounded-xl p-5 bg-gray-50/50 flex flex-col justify-between">
                         <div>
@@ -153,10 +153,8 @@
     </main>
 
     <script>
-        // TARGET SPREADSHEET HOOKS
+        // SPREADSHEET KEY AND CONFIRMED TAB CONFIGURATIONS
         const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
-
-        // Confirmed and matched directly from your browser screenshot parameters
         const GID_TEAMS = '0';          
         const GID_SCHEDULES = '862932346';  
         const GID_ROSTERS = '1073182645';    
@@ -202,8 +200,9 @@
             const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_ROSTERS}`;
             const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SPONSORS}`;
 
+            // FIXED REFERENCE CALL HERE
             const [teamsData, schedulesData, rostersData, sponsorsData] = await Promise.all([
-                fetchCSV(urlTeams), fetchCSV(urlSchedules), fetchCSV(urlRosters), fetchCSV(sponsorsData)
+                fetchCSV(urlTeams), fetchCSV(urlSchedules), fetchCSV(urlRosters), fetchCSV(urlSponsors)
             ]);
 
             if (teamsData === null || schedulesData === null) {
@@ -248,7 +247,7 @@
                 }
             });
 
-            // 2. Process Schedules (Insulated against empty trailing metrics rows)
+            // 2. Process Schedules
             schedulesRaw.forEach((row, i) => {
                 if(!row) return;
                 let div = "", mid = `G${i}`, time = "TBD", loc = "Court 1", hid = "", aid = "", hsc = null, asc = null;
@@ -273,10 +272,6 @@
                         else div = autoDetectDivision(hid, aid);
                     } else {
                         div = autoDetectDivision(hid, aid);
-                    }
-
-                    if (!appState.schedules[div]) {
-                        appState.schedules[div] = [];
                     }
 
                     appState.schedules[div].push({
@@ -367,7 +362,7 @@
             const matches = appState.schedules[division] || [];
 
             if(matches.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-sm text-gray-500 font-medium">⚠️ No matches found for the ${division} division view. Ensure columns sync correctly.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-sm text-gray-500 font-medium">⚠️ No matches found for the ${division} division view.</td></tr>`;
                 return;
             }
 
