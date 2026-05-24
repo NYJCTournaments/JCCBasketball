@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JCC Basketball - 2026 Season Live Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900">
+
+    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <div class="flex items-center gap-4 self-start md:self-auto">
+                <div class="h-16 w-16 bg-white rounded-lg p-1 shadow-md border border-blue-800 flex items-center justify-center overflow-hidden">
+                    <img id="mainAppLogo" src="Logo.jpg" alt="JCC Basketball Logo" class="max-h-full max-w-full object-contain rounded" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight leading-none uppercase">JCC Basketball</h1>
+                    <p class="text-sm font-semibold tracking-wider text-blue-300 uppercase mt-1">2026 Season Center</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting to Sheets...
+                </span>
+                <button onclick="fetchLiveSheetData()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold rounded transition">🔄 Sync Now</button>
+            </div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
+            <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab whitespace-nowrap">📅 Games & Scores</button>
+            <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">📊 Standings</button>
+            <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">👥 Team Rosters</button>
+            <button onclick="switchTab('rules-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">📜 Rules & Format</button>
+            <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200 hover:text-white whitespace-nowrap">🏆 Sponsors</button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <div id="divisionFilterBar" class="mb-6 bg-white p-4 rounded-xl shadow-sm flex items-center justify-between border border-gray-200">
+            <label class="font-bold text-gray-700 text-sm tracking-wider uppercase">Select Current Division View:</label>
+            <select id="divisionSelector" onchange="renderActiveViews()" class="bg-gray-50 border border-gray-300 rounded-lg p-2 font-semibold text-blue-900 focus:ring-2 focus:ring-blue-500">
+                <option value="Adult">Adult Division</option>
+                <option value="Youth">Youth Division</option>
+                <option value="Kids">Kids Division</option>
+            </select>
+        </div>
+
+        <section id="schedule-tab" class="tab-content active">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                                <th class="p-4">Time / Court</th>
+                                <th class="p-4">Home Team / Team A</th>
+                                <th class="p-4 text-center">Live Score</th>
+                                <th class="p-4 text-right">Away Team / Team B</th>
+                                <th class="p-4 text-center">Match Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody">
+                            <tr><td colspan="5" class="p-8 text-center text-gray-500">Reading real-time stream headers...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="standings-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs tracking-wider border-b border-gray-200">
+                                <th class="p-4 w-12 text-center">Rank</th>
+                                <th class="p-4">Registered Club</th>
+                                <th class="p-4 text-center">GP</th>
+                                <th class="p-4 text-center text-green-600">W</th>
+                                <th class="p-4 text-center text-red-600">L</th>
+                                <th class="p-4 text-center text-blue-600 font-bold">Points</th>
+                                <th class="p-4 text-center">PF</th>
+                                <th class="p-4 text-center">PA</th>
+                                <th class="p-4 text-center font-bold">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standingsTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="rosters-tab" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <h3 class="font-bold text-gray-800 border-b pb-2 mb-3 tracking-wide uppercase text-xs text-gray-500">Divisional Rosters</h3>
+                    <div id="rosterTeamList" class="space-y-1 max-h-96 overflow-y-auto"></div>
+                </div>
+                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 id="activeRosterTitle" class="font-bold text-lg text-blue-900 mb-4 border-b pb-2">Select a team from the panel</h3>
+                    <ul id="rosterPlayerList" class="list-disc pl-5 space-y-1 text-gray-700 font-medium"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="rules-tab" class="tab-content">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 mb-1">League Handbooks & Playbook Formats</h2>
+                <p class="text-sm text-gray-500 mb-6">Review official timing limits, point systems, and tournament configurations.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-full">Pro Tier</span>
+                            <h3 class="font-bold text-lg text-gray-800 mt-3">Adult Rules</h3>
+                            <p class="text-sm text-gray-500 mt-2">Standard regulation stop-clock setups, player foul-out caps, and code of conduct policies.</p>
+                        </div>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 View Book</a>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-full">Developmental</span>
+                            <h3 class="font-bold text-lg text-gray-800 mt-3">Youth Rules</h3>
+                            <p class="text-sm text-gray-500 mt-2">Modified pressure defenses, standard run time structures, and court configurations.</p>
+                        </div>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 View Book</a>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-green-600 uppercase tracking-wider bg-green-50 px-2.5 py-1 rounded-full">Junior Circuit</span>
+                            <h3 class="font-bold text-lg text-gray-800 mt-3">Kids Rules</h3>
+                            <p class="text-sm text-gray-500 mt-2">Lowered rim setups, equal-play rotations, and focus on foundational skills mechanics.</p>
+                        </div>
+                        <a href="#" target="_blank" class="mt-6 block text-center font-bold bg-blue-900 text-white text-xs py-2.5 rounded-lg hover:bg-blue-800 transition">📄 View Book</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sponsors-tab" class="tab-content">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Our Corporate Partners</h2>
+                <div id="sponsorsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-4">
+                    </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // CONFIGURATION PARAMETERS
+        const SHEET_ID = '10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc'; 
+        const GID_TEAMS = '0';          
+        const GID_SCHEDULES = '1384061596';  
+        const GID_ROSTERS = '1073182645';    
+        const GID_SPONSORS = '703899276';   
+
+        let appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
+        let selectedTeamKey = null;
+
+        function switchTab(tabId, btnEl) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById(tabId).classList.add('active');
+            btnEl.classList.add('active-tab');
+
+            const filterBar = document.getElementById("divisionFilterBar");
+            if(tabId === 'sponsors-tab' || tabId === 'rules-tab') {
+                filterBar.classList.add('hidden');
+            } else {
+                filterBar.classList.remove('hidden');
+            }
+        }
+
+        function cleanKey(k) {
+            return k.replace(/[\s_\-\/]/g, '').toLowerCase();
+        }
+
+        async function fetchCSV(url) {
+            try {
+                const res = await fetch(url);
+                if(!res.ok) return null;
+                return await res.text();
+            } catch (e) {
+                console.error("Endpoint data read drop:", url);
+                return null;
+            }
+        }
+
+        async function fetchLiveSheetData() {
+            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-spin"></span> Refreshing Stream...`;
+            
+            const urlTeams = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_TEAMS}`;
+            const urlSchedules = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SCHEDULES}`;
+            const urlRosters = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_ROSTERS}`;
+            const urlSponsors = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=${GID_SPONSORS}`;
+
+            const [teams, scheds, rosters, sponsors] = await Promise.all([
+                fetchCSV(urlTeams), fetchCSV(urlSchedules), fetchCSV(urlRosters), fetchCSV(urlSponsors)
+            ]);
+
+            if (teams === null || scheds === null) {
+                document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Public Sync Failed`;
+                return;
+            }
+
+            processTournamentDatabase(teams, scheds, rosters, sponsors);
+        }
+
+        function processTournamentDatabase(teamsCSV, schedulesCSV, rostersCSV, sponsorsCSV) {
+            appState = { teams: { Adult:{}, Youth:{}, Kids:{} }, schedules: { Adult:[], Youth:[], Kids:[] }, rosters: {}, sponsors: [] };
+
+            const teamsRaw = Papa.parse(teamsCSV, { header: true, skipEmptyLines: true }).data;
+            const schedulesRaw = Papa.parse(schedulesCSV, { header: true, skipEmptyLines: true }).data;
+            const rostersRaw = rostersCSV ? Papa.parse(rostersCSV, { header: true, skipEmptyLines: true }).data : [];
+            const sponsorsRaw = sponsorsCSV ? Papa.parse(sponsorsCSV, { header: true, skipEmptyLines: true }).data : [];
+
+            // 1. Map Club Rosters / Teams Base
+            teamsRaw.forEach(row => {
+                let div = "", tid = "", tname = "";
+                for(let key in row) {
+                    let ck = cleanKey(key);
+                    if(ck === 'division' && row[key]) div = row[key].trim();
+                    if((ck === 'teamid' || ck === 'teamnumber' || ck === 'id') && row[key]) tid = row[key].trim();
+                    if((ck === 'teamname' || ck === 'team') && row[key]) tname = row[key].trim();
+                }
+                
+                if(!div && tname) div = "Adult"; 
+                if(div) {
+                    if(div.toLowerCase().includes("adult")) div = "Adult";
+                    else if(div.toLowerCase().includes("youth")) div = "Youth";
+                    else if(div.toLowerCase().includes("kids")) div = "Kids";
+                    else div = "Adult";
+                } else {
+                    div = "Adult";
+                }
+
+                if(tid && tname) {
+                    appState.teams[div][tid] = tname;
+                    appState.rosters[tid] = [];
+                }
+            });
+
+            // 2. Parse Schedule Grids safely
+            schedulesRaw.forEach((row, i) => {
+                let div = "", time = "", loc = "Court 1", hid = "", aid = "", hsc = null, asc = null;
+                
+                for(let key in row) {
+                    let ck = cleanKey(key);
+                    if((ck === 'division' || ck === 'hierarchy') && row[key]) div = row[key].trim();
+                    if(ck === 'time' && row[key]) time = row[key].trim();
+                    if((ck === 'location' || ck === 'court') && row[key]) loc = row[key].trim();
+                    if(['home', 'homeid', 'teama', 'team1'].includes(ck) && row[key]) hid = row[key].trim();
+                    if(['away', 'awayid', 'visitor', 'teamb', 'team2'].includes(ck) && row[key]) aid = row[key].trim();
+                    if((ck === 'homescore' || ck === 'scorea') && row[key] !== "") hsc = parseInt(row[key], 10);
+                    if((ck === 'awayscore' || ck === 'scoreb') && row[key] !== "") asc = parseInt(row[key], 10);
+                }
+
+                if(hid && aid) {
+                    if(!div) {
+                        div = autoDetectDivision(hid, aid);
+                    } else {
+                        if(div.toLowerCase().includes("adult")) div = "Adult";
+                        else if(div.toLowerCase().includes("youth")) div = "Youth";
+                        else if(div.toLowerCase().includes("kids")) div = "Kids";
+                        else div = autoDetectDivision(hid, aid);
+                    }
+
+                    appState.schedules[div].push({
+                        id: `G-${i}`, time: time || "TBD", location: loc,
+                        homeId: hid, awayId: aid,
+                        homeScore: isNaN(hsc) ? null : hsc, awayScore: isNaN(asc) ? null : asc
+                    });
+                }
+            });
+
+            // 3. Populate Individual Player Data
+            rostersRaw.forEach(row => {
+                let tid = "", pname = "";
+                for(let key in row) {
+                    let ck = cleanKey(key);
+                    if(['teamid', 'teamname', 'team'].includes(ck) && row[key]) tid = row[key].trim();
+                    if(['playername', 'player'].includes(ck) && row[key]) pname = row[key].trim();
+                }
+                if(tid && pname) {
+                    let resolved = matchGlobalTeamID(tid);
+                    if(!appState.rosters[resolved]) appState.rosters[resolved] = [];
+                    appState.rosters[resolved].push(pname);
+                }
+            });
+
+            // 4. Assemble Partner Data Engine
+            sponsorsRaw.forEach(row => {
+                let name = "", level = "Partner", logo = "", web = "";
+                for(let key in row) {
+                    let ck = cleanKey(key);
+                    if(['sponsorname', 'name', 'company'].includes(ck) && row[key]) name = row[key].trim();
+                    if(['sponsorlevel', 'level', 'tier'].includes(ck) && row[key]) level = row[key].trim();
+                    if(['logourl', 'logo'].includes(ck) && row[key]) logo = row[key].trim();
+                    if(['website', 'url', 'link'].includes(ck) && row[key]) web = row[key].trim();
+                }
+                if(name) appState.sponsors.push({ name, level, logo, web });
+            });
+
+            document.getElementById("syncStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500"></span> Live Data Synced`;
+            renderActiveViews();
+            renderSponsorsView();
+        }
+
+        function autoDetectDivision(idA, idB) {
+            for (let d of ['Adult', 'Youth', 'Kids']) {
+                if (appState.teams[d][idA] || appState.teams[d][idB]) return d;
+            }
+            return "Adult"; 
+        }
+
+        function matchGlobalTeamID(str) {
+            for (let d of ['Adult', 'Youth', 'Kids']) {
+                if (appState.teams[d][str]) return str;
+                for (let id in appState.teams[d]) {
+                    if (appState.teams[d][id].toLowerCase() === str.toLowerCase()) return id;
+                }
+            }
+            return str;
+        }
+
+        function renderActiveViews() {
+            const div = document.getElementById("divisionSelector").value;
+            renderSchedule(div);
+            renderStandings(div);
+            renderRostersSidebar(div);
+        }
+
+        function renderSchedule(division) {
+            const tbody = document.getElementById("scheduleTableBody");
+            tbody.innerHTML = "";
+            const matches = appState.schedules[division] || [];
+
+            if(matches.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-sm text-gray-500 font-medium">⚠️ No matches found for ${division} division. Verify your spreadsheet is Published to the Web via File -> Share.</td></tr>`;
+                return;
+            }
+
+            matches.forEach(match => {
+                const homeName = appState.teams[division][match.homeId] || match.homeId;
+                const awayName = appState.teams[division][match.awayId] || match.awayId;
+                const isFinal = match.homeScore !== null && match.awayScore !== null;
+
+                const tr = document.createElement("tr");
+                tr.className = "border-b border-gray-200 text-sm hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-bold text-gray-800">${match.time}</div>
+                        <div class="text-xs text-gray-500">${match.location}</div>
+                    </td>
+                    <td class="p-4 font-semibold text-gray-700">${homeName}</td>
+                    <td class="p-4 text-center font-mono font-bold text-base bg-gray-50/50 w-28">
+                        ${isFinal ? `${match.homeScore} - ${match.awayScore}` : `<span class="text-xs text-gray-400 font-sans">VS</span>`}
+                    </td>
+                    <td class="p-4 font-semibold text-gray-700 text-right">${awayName}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isFinal ? 'bg-green-100 text-green-800':'bg-gray-100 text-gray-600'}">
+                            ${isFinal ? 'Final' : 'Scheduled'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderStandings(division) {
+            const tbody = document.getElementById("standingsTableBody");
+            tbody.innerHTML = "";
+            
+            const teamsMap = appState.teams[division] || {};
+            const matches = appState.schedules[division] || [];
+            let stats = {};
+
+            for (const id in teamsMap) {
+                stats[id] = { id, name: teamsMap[id], gp: 0, wins: 0, losses: 0, pts: 0, pf: 0, pa: 0, pd: 0, h2h: {} };
+            }
+
+            matches.forEach(m => {
+                if (m.homeScore !== null && m.awayScore !== null) {
+                    const hs = m.homeScore; const as = m.awayScore;
+                    if (stats[m.homeId] && stats[m.awayId]) {
+                        stats[m.homeId].gp++; stats[m.awayId].gp++;
+                        stats[m.homeId].pf += hs; stats[m.homeId].pa += as;
+                        stats[m.awayId].pf += as; stats[m.awayId].pa += hs;
+
+                        if (hs > as) {
+                            stats[m.homeId].wins++; stats[m.homeId].pts += 2; stats[m.awayId].losses++;
+                            stats[m.homeId].h2h[m.awayId] = 'W'; stats[m.awayId].h2h[m.homeId] = 'L';
+                        } else {
+                            stats[m.awayId].wins++; stats[m.awayId].pts += 2; stats[m.homeId].losses++;
+                            stats[m.awayId].h2h[m.homeId] = 'W'; stats[m.homeId].h2h[m.awayId] = 'L';
+                        }
+                    }
+                }
+            });
+
+            for (const id in stats) { stats[id].pd = stats[id].pf - stats[id].pa; }
+            let leaderboard = Object.values(stats).sort((a, b) => {
+                if (b.pts !== a.pts) return b.pts - a.pts;
+                if (a.h2h[b.id] === 'W') return -1;
+                if (a.h2h[b.id] === 'L') return 1;
+                return b.pd - a.pd;
+            });
+
+            if (leaderboard.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400 text-xs">No entries to display.</td></tr>`;
+                return;
+            }
+
+            leaderboard.forEach((team, idx) => {
+                const tr = document.createElement("tr");
+                tr.className = "border-b border-gray-200 text-sm hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 text-center font-bold text-gray-500">${idx + 1}</td>
+                    <td class="p-4 font-bold text-gray-900">${team.name}</td>
+                    <td class="p-4 text-center">${team.gp}</td>
+                    <td class="p-4 text-center text-green-600">${team.wins}</td>
+                    <td class="p-4 text-center text-red-600">${team.losses}</td>
+                    <td class="p-4 text-center font-black text-blue-600 bg-blue-50">${team.pts}</td>
+                    <td class="p-4 text-center text-gray-500">${team.pf}</td>
+                    <td class="p-4 text-center text-gray-500">${team.pa}</td>
+                    <td class="p-4 text-center font-bold ${team.pd >= 0 ? 'text-green-600':'text-red-600'}">${team.pd > 0 ? '+'+team.pd : team.pd}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderRostersSidebar(division) {
+            const container = document.getElementById("rosterTeamList");
+            container.innerHTML = "";
+            const teams = appState.teams[division] || {};
+
+            for (const key in teams) {
+                const btn = document.createElement("button");
+                btn.className = `w-full text-left px-3 py-2 text-sm rounded-lg block transition truncate ${selectedTeamKey === key ? 'bg-blue-100 text-blue-900 font-bold':'text-gray-700 hover:bg-gray-100'}`;
+                btn.innerText = teams[key];
+                btn.onclick = () => {
+                    selectedTeamKey = key;
+                    renderRostersSidebar(division);
+                    const players = appState.rosters[key] || [];
+                    document.getElementById("activeRosterTitle").innerText = `${teams[key]} Roster`;
+                    document.getElementById("rosterPlayerList").innerHTML = players.length > 0 
+                        ? players.map(p => `<li>${p}</li>`).join("")
+                        : `<span class="text-sm text-gray-400 font-normal italic">No player records found.</span>`;
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        function renderSponsorsView() {
+            const container = document.getElementById("sponsorsContainer");
+            if(appState.sponsors.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-gray-400 text-xs italic">Sponsor list data unavailable.</div>`;
+                return;
+            }
+
+            container.innerHTML = appState.sponsors.map(sp => {
+                const displayLogo = sp.logo ? `<img src="${sp.logo}" alt="${sp.name}" class="max-h-16 max-w-full object-contain mx-auto">` : `<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-800 uppercase">${sp.name.slice(0,2)}</div>`;
+                return `
+                    <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
+                        <div class="h-16 flex items-center justify-center mb-2">${displayLogo}</div>
+                        <h4 class="font-bold text-gray-800 text-sm">${sp.name}</h4>
+                        <span class="inline-block text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 mt-1 rounded">${sp.level}</span>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        window.onload = fetchLiveSheetData;
+    </script>
+</body>
+</html>
