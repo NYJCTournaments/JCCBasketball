@@ -61,96 +61,80 @@
     </main>
 
 <script>
-    let appState = { schedules: [], standings: {} };
+    let appState = { schedules: [] };
 
     async function fetchLiveSheetData() {
         const statusEl = document.getElementById("syncStatus");
         try {
+            // Your exact Google Sheet CSV link
             const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
             const res = await fetch(`${base}&gid=862932346`);
             const csvText = await res.text();
             
-            const parsed = Papa.parse(csvText, {header:true});
+            // Parse with correct headers from your file
+            const parsed = Papa.parse(csvText, {header:true, skipEmptyLines: true});
             appState.schedules = parsed.data;
             
-            processStandings();
             statusEl.innerText = "Synced";
             renderSchedule();
-            renderStandings(); 
+            renderStandings();
         } catch (err) {
-            console.error(err);
             statusEl.innerText = "Sync Failed";
         }
     }
 
-    function processStandings() {
-        appState.standings = {};
-        appState.schedules.forEach(game => {
-            // Check for valid IDs and numeric scores
-            if (game.HomeID && game.AwayID && game.HomeScore !== "" && game.AwayScore !== "") {
-                const hScore = parseInt(game.HomeScore) || 0;
-                const aScore = parseInt(game.AwayScore) || 0;
+    function renderSchedule() {
+        const selectedDiv = document.getElementById("divisionSelector").value.trim();
+        const tbody = document.getElementById("scheduleTableBody");
+        
+        const filtered = appState.schedules.filter(row => (row.Division || "").trim() === selectedDiv);
 
-                [game.HomeID, game.AwayID].forEach(team => {
-                    if (!appState.standings[team]) {
-                        appState.standings[team] = { W: 0, L: 0, Pts: 0, Diff: 0 };
-                    }
-                });
-
-                // Update Home Team
-                appState.standings[game.HomeID].Diff += (hScore - aScore);
-                if (hScore > aScore) {
-                    appState.standings[game.HomeID].W++;
-                    appState.standings[game.HomeID].Pts += 2;
-                } else {
-                    appState.standings[game.HomeID].L++;
-                }
-
-                // Update Away Team
-                appState.standings[game.AwayID].Diff += (aScore - hScore);
-                if (aScore > hScore) {
-                    appState.standings[game.AwayID].W++;
-                    appState.standings[game.AwayID].Pts += 2;
-                } else {
-                    appState.standings[game.AwayID].L++;
-                }
-            }
-        });
+        tbody.innerHTML = filtered.map(row => `
+            <tr class="border-b hover:bg-gray-50 transition">
+                <td class="p-4 text-sm">
+                    <div class="font-bold text-gray-800">${row.Time || 'TBD'}</div>
+                    <div class="text-xs text-blue-600 font-semibold">${row.Location || 'TBD'}</div>
+                </td>
+                <td class="p-4 font-bold text-gray-900">${row.HomeID || 'TBD'}</td>
+                <td class="p-4 font-bold text-gray-900">${row.AwayID || 'TBD'}</td>
+            </tr>
+        `).join("");
     }
 
     function renderStandings() {
         const container = document.getElementById("standings-tab");
-        const teams = Object.keys(appState.standings);
-        
+        const stats = {};
+
+        appState.schedules.forEach(row => {
+            if (!row.HomeScore || !row.AwayScore) return;
+            const h = row.HomeID, a = row.AwayID;
+            const hs = parseInt(row.HomeScore) || 0, as = parseInt(row.AwayScore) || 0;
+            
+            [h, a].forEach(t => { if(!stats[t]) stats[t] = {W:0, L:0, Pts:0, Diff:0}; });
+            
+            stats[h].Diff += (hs - as); stats[a].Diff += (as - hs);
+            if(hs > as) { stats[h].W++; stats[h].Pts += 2; stats[a].L++; }
+            else if(as > hs) { stats[a].W++; stats[a].Pts += 2; stats[h].L++; }
+        });
+
+        const teams = Object.keys(stats);
         container.innerHTML = `
             <div class="bg-white shadow rounded-lg overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                        <tr>
-                            <th class="p-3">Team</th>
-                            <th class="p-3 text-center">Won</th>
-                            <th class="p-3 text-center">Lost</th>
-                            <th class="p-3 text-center">Win Pts</th>
-                            <th class="p-3 text-center">+/-</th>
-                        </tr>
+                        <tr><th class="p-3">Team</th><th class="p-3">W</th><th class="p-3">L</th><th class="p-3">Pts</th><th class="p-3">+/-</th></tr>
                     </thead>
-                    <tbody class="divide-y">
-                        ${teams.map(team => `
-                            <tr class="hover:bg-gray-50">
-                                <td class="p-3 font-bold">${team}</td>
-                                <td class="p-3 text-center">${appState.standings[team].W}</td>
-                                <td class="p-3 text-center">${appState.standings[team].L}</td>
-                                <td class="p-3 text-center font-bold text-blue-600">${appState.standings[team].Pts}</td>
-                                <td class="p-3 text-center ${appState.standings[team].Diff >= 0 ? 'text-green-600' : 'text-red-600'}">${appState.standings[team].Diff}</td>
-                            </tr>
+                    <tbody>
+                        ${teams.map(t => `
+                            <tr class="border-t"><td class="p-3 font-bold">${t}</td><td class="p-3">${stats[t].W}</td><td class="p-3">${stats[t].L}</td><td class="p-3 font-bold text-blue-600">${stats[t].Pts}</td><td class="p-3">${stats[t].Diff}</td></tr>
                         `).join("")}
                     </tbody>
                 </table>
-            </div>
-        `;
+            </div>`;
     }
 
-    // Keep your renderSchedule and other functions exactly as they are
+    document.getElementById("divisionSelector").addEventListener("change", renderSchedule);
+    window.onload = fetchLiveSheetData;
 </script>
 </body>
 </html>
