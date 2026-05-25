@@ -61,63 +61,47 @@
     </main>
 
   <script>
-    // Global state
-    let appState = { teams: {}, schedules: [] };
+        let appState = { schedules: [] };
 
-    async function fetchLiveSheetData() {
-        const statusEl = document.getElementById("syncStatus");
-        statusEl.innerText = "Syncing...";
+        async function fetchLiveSheetData() {
+            const statusEl = document.getElementById("syncStatus");
+            try {
+                const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
+                const res = await fetch(`${base}&gid=862932346`);
+                const csvText = await res.text();
+                
+                appState.schedules = Papa.parse(csvText, {header:true}).data;
+                
+                statusEl.innerText = "Synced";
+                renderSchedule();
+            } catch (err) {
+                statusEl.innerText = "Sync Failed";
+            }
+        }
 
-        // Force a timeout so it doesn't get stuck forever
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        try {
-            const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
+        function renderSchedule() {
+            const div = document.getElementById("divisionSelector").value;
+            const tbody = document.getElementById("scheduleTableBody");
             
-            // Fetch the tabs
-            const responses = await Promise.all([
-                fetch(`${base}&gid=0`, { signal: controller.signal }),
-                fetch(`${base}&gid=862932346`, { signal: controller.signal })
-            ]);
+            // Filter by the Division column
+            const filtered = appState.schedules.filter(row => row.Division === div);
 
-            const data = await Promise.all(responses.map(r => r.text()));
-            clearTimeout(timeoutId);
-
-            // Parse
-            const teamsData = Papa.parse(data[0], {header: true}).data;
-            const schedData = Papa.parse(data[1], {header: true}).data;
-
-            // Store in state
-            teamsData.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = r.TeamName; });
-            appState.schedules = schedData;
-
-            statusEl.innerText = "Synced";
-            renderSchedule(); 
-
-        } catch (err) {
-            console.error("DEBUG ERROR:", err);
-            statusEl.innerText = "Sync Failed (Check Console)";
-        }
-    }
-
-    function renderSchedule() {
-        const tbody = document.getElementById("scheduleTableBody");
-        if (!appState.schedules || appState.schedules.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='3'>No data found.</td></tr>";
-            return;
+            tbody.innerHTML = filtered.map(row => `
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="p-4 text-sm">
+                        <div class="font-bold text-gray-800">${row.Time}</div>
+                        <div class="text-xs text-blue-600 font-semibold">${row.Location}</div>
+                    </td>
+                    <td class="p-4 font-bold text-gray-900">${row.HomeID}</td>
+                    <td class="p-4 font-bold text-gray-900">${row.AwayID}</td>
+                </tr>
+            `).join("");
         }
 
-        tbody.innerHTML = appState.schedules.map(row => `
-            <tr class="border-t">
-                <td class="p-3">${row.Time || 'TBD'} <br> <span class="text-xs text-blue-600">${row.Court || 'Court 1'}</span></td>
-                <td class="p-3 font-bold">${appState.teams[row.HomeID] || row.Home || row.HomeID || 'TBD'}</td>
-                <td class="p-3 font-bold">${appState.teams[row.AwayID] || row.Away || row.AwayID || 'TBD'}</td>
-            </tr>
-        `).join("");
-    }
+        // Add event listener to dropdown
+        document.getElementById("divisionSelector").addEventListener("change", renderSchedule);
 
-    window.onload = fetchLiveSheetData;
-</script>
+        window.onload = fetchLiveSheetData;
+    </script>
 </body>
 </html>
