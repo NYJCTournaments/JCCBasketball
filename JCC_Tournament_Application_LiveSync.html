@@ -1,122 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JCC Basketball - 2026 Season</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; font-weight: bold; }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans text-gray-900">
+<script>
+    let appState = { schedules: [], standings: {} };
 
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4">
-                <div class="h-16 w-16 bg-white rounded-lg p-1 flex items-center justify-center overflow-hidden">
-                    <img src="Logo.jpg" alt="Logo" class="max-h-full max-w-full object-contain" onerror="this.src='https://img.icons8.com/ios-filled/100/3182ce/basketball-hoop.png';">
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black tracking-tight uppercase">JCC Basketball</h1>
-                    <p class="text-sm font-semibold text-blue-300 uppercase mt-1">2026 Season</p>
-                </div>
-            </div>
-            <div id="syncStatus" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full text-blue-200">Syncing...</div>
-        </div>
-       <div class="max-w-7xl mx-auto px-4 flex border-t border-blue-800 text-sm overflow-x-auto">
-    <button onclick="switchTab('schedule-tab', this)" class="tab-btn px-4 py-3 active-tab">📅 Games</button>
-    <button onclick="switchTab('standings-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📊 Standings</button>
-    <button onclick="switchTab('rosters-tab', this)" class="tab-btn px-4 py-3 text-blue-200">👥 Rosters</button>
-    <button onclick="switchTab('rules-tab', this)" class="tab-btn px-4 py-3 text-blue-200">📜 Rules</button>
-    <button onclick="switchTab('sponsors-tab', this)" class="tab-btn px-4 py-3 text-blue-200">🏆 Sponsors</button>
-</div>
-    </header>
+    async function fetchLiveSheetData() {
+        const statusEl = document.getElementById("syncStatus");
+        try {
+            const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
+            const res = await fetch(`${base}&gid=862932346`);
+            const csvText = await res.text();
+            
+            const parsed = Papa.parse(csvText, {header:true});
+            appState.schedules = parsed.data;
+            
+            calculateStandings();
+            statusEl.innerText = "Synced";
+            renderSchedule();
+            renderStandings(); 
+        } catch (err) {
+            statusEl.innerText = "Sync Failed";
+        }
+    }
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border">
-            <label class="block font-bold text-xs uppercase mb-2">Filter by Division:</label>
-            <select id="divisionSelector" onchange="renderSchedule()" class="w-full p-2 border rounded font-bold">
-                <option value="Adult Division">Adult Division</option>
-                <option value="Youth Division">Youth Division</option>
-                <option value="Kids Division">Kids Division</option>
-            </select>
-        </div>
+    function calculateStandings() {
+        appState.standings = {};
+        appState.schedules.forEach(game => {
+            if (!game.HomeScore || !game.AwayScore) return; // Only count games with scores
 
-        <section id="schedule-tab" class="tab-content active">
-            <div class="bg-white shadow rounded-lg overflow-hidden">
+            const home = game.HomeID;
+            const away = game.AwayID;
+            const hScore = parseInt(game.HomeScore);
+            const aScore = parseInt(game.AwayScore);
+
+            [home, away].forEach(t => { if(!appState.standings[t]) appState.standings[t] = {W:0, L:0}; });
+
+            if (hScore > aScore) { appState.standings[home].W++; appState.standings[away].L++; }
+            else if (aScore > hScore) { appState.standings[away].W++; appState.standings[home].L++; }
+        });
+    }
+
+    function renderStandings() {
+        const div = document.getElementById("divisionSelector").value;
+        const container = document.getElementById("standings-tab");
+        
+        // This is a simple display; we can refine the filter to only show teams in the selected division
+        container.innerHTML = `
+            <div class="bg-white shadow rounded-lg overflow-hidden p-6">
                 <table class="w-full text-left">
-                    <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-3">Time/Court</th><th class="p-3">Home</th><th class="p-3">Away</th></tr></thead>
-                    <tbody id="scheduleTableBody"></tbody>
+                    <thead class="text-xs uppercase text-gray-500"><tr><th class="p-3">Team</th><th class="p-3">Wins</th><th class="p-3">Losses</th></tr></thead>
+                    <tbody>
+                        ${Object.keys(appState.standings).map(team => `
+                            <tr class="border-t">
+                                <td class="p-3 font-bold">${team}</td>
+                                <td class="p-3">${appState.standings[team].W}</td>
+                                <td class="p-3">${appState.standings[team].L}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
                 </table>
             </div>
-        </section>
-        <section id="standings-tab" class="tab-content"><div class="p-8 bg-white rounded shadow">Standings Content</div></section>
-        <section id="rosters-tab" class="tab-content"><div class="p-8 bg-white rounded shadow">Roster Content</div></section>
-        <section id="rules-tab" class="tab-content"><div class="p-8 bg-white rounded shadow">Rules Content</div></section>
-        <section id="sponsors-tab" class="tab-content"><div class="p-8 bg-white rounded shadow">Sponsors Content</div></section>
-    </main>
+        `;
+    }
 
-<script>
-        let appState = { schedules: [] };
-
-        async function fetchLiveSheetData() {
-            const statusEl = document.getElementById("syncStatus");
-            try {
-                const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-                const res = await fetch(`${base}&gid=862932346`);
-                const csvText = await res.text();
-                
-                const parsed = Papa.parse(csvText, {header:true});
-                appState.schedules = parsed.data;
-                
-                console.log("Headers found in sheet:", parsed.meta.fields);
-                statusEl.innerText = "Synced";
-                renderSchedule();
-            } catch (err) {
-                statusEl.innerText = "Sync Failed";
-            }
-        }
-
-        function renderSchedule() {
-            const selectedDiv = document.getElementById("divisionSelector").value.trim();
-            const tbody = document.getElementById("scheduleTableBody");
-            
-            // Clean the data: Filter where the 'Division' column matches the selector
-            const filtered = appState.schedules.filter(row => {
-                // Get the division from the sheet row and clean it
-                const rowDiv = (row.Division || "").trim();
-                return rowDiv === selectedDiv;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No games found for "${selectedDiv}". Check your Sheet headers.</td></tr>`;
-            } else {
-                tbody.innerHTML = filtered.map(row => `
-                    <tr class="border-b hover:bg-gray-50 transition">
-                        <td class="p-4 text-sm">
-                            <div class="font-bold text-gray-800">${row.Time || 'TBD'}</div>
-                            <div class="text-xs text-blue-600 font-semibold">${row.Location || 'TBD'}</div>
-                        </td>
-                        <td class="p-4 font-bold text-gray-900">${row.HomeID || 'TBD'}</td>
-                        <td class="p-4 font-bold text-gray-900">${row.AwayID || 'TBD'}</td>
-                    </tr>
-                `).join("");
-            }
-        }
-
-        document.getElementById("divisionSelector").addEventListener("change", renderSchedule);
-        window.onload = fetchLiveSheetData;
-
-        function switchTab(tabId, btnEl) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
-            document.getElementById(tabId).classList.add('active');
-            btnEl.classList.add('active-tab');
-        }
-    </script>
-</body>
-</html>
+    // Keep your existing renderSchedule and switchTab functions below this...
+</script>
