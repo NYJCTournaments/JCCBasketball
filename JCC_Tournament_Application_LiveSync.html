@@ -61,54 +61,33 @@
     </main>
 
    <script>
-        let appState = { teams: {}, schedules: [] };
-
         async function fetchLiveSheetData() {
-            const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-            const responses = await Promise.all([fetch(`${base}&gid=0`), fetch(`${base}&gid=862932346`)]);
-            const data = await Promise.all(responses.map(r => r.text()));
-            
-            // Log the headers found in your sheets
-            const teamHeaders = Papa.parse(data[0], {preview: 1}).data[0];
-            const schedHeaders = Papa.parse(data[1], {preview: 1}).data[0];
-            console.log("Found Team Headers:", teamHeaders);
-            console.log("Found Schedule Headers:", schedHeaders);
-
-            // Parse Data
-            const teamRows = Papa.parse(data[0], {header:true}).data;
-            teamRows.forEach(r => { 
-                // Dynamically find the ID and Name regardless of header name
-                const id = r.TeamID || r.ID || r['Team ID'];
-                const name = r.TeamName || r.Name || r['Team Name'];
-                const div = r.Division || r.Div;
-                if(id) appState.teams[id] = {name: name, div: div}; 
-            });
-
-            appState.schedules = Papa.parse(data[1], {header:true}).data;
-            document.getElementById("syncStatus").innerText = "Synced";
-            renderSchedule();
-        }
-
-        function renderSchedule() {
-            const div = document.getElementById("divisionSelector").value;
-            const tbody = document.getElementById("scheduleTableBody");
-            
-            tbody.innerHTML = appState.schedules.map(row => {
-                // Try multiple common names for columns
-                const home = row.HomeID || row.Home || row['Home Team'] || "TBD";
-                const away = row.AwayID || row.Away || row['Away Team'] || "TBD";
-                const time = row.Time || row['Game Time'] || "TBD";
-                const court = row.Court || row.Location || "Court 1";
+            const statusEl = document.getElementById("syncStatus");
+            try {
+                const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
                 
-                return `
-                    <tr class="border-t hover:bg-gray-50">
-                        <td class="p-3 text-sm text-gray-600">${time}<br><span class="text-xs text-blue-600 font-bold">${court}</span></td>
-                        <td class="p-3 font-bold text-gray-900">${appState.teams[home]?.name || home}</td>
-                        <td class="p-3 font-bold text-gray-900">${appState.teams[away]?.name || away}</td>
+                // Fetch just the schedule tab (gid=862932346)
+                const res = await fetch(`${base}&gid=862932346`);
+                const csvText = await res.text();
+                
+                console.log("RAW CSV DATA FROM GOOGLE:", csvText);
+                
+                const data = Papa.parse(csvText, {header:true}).data;
+                const tbody = document.getElementById("scheduleTableBody");
+                
+                tbody.innerHTML = data.map(row => `
+                    <tr class="border-t">
+                        <td class="p-3">${JSON.stringify(row)}</td>
                     </tr>
-                `;
-            }).join("");
+                `).join("");
+                
+                statusEl.innerText = "Synced & Debugged";
+            } catch (err) {
+                console.error("DEBUG ERROR:", err);
+                statusEl.innerText = "Sync Failed";
+            }
         }
+        window.onload = fetchLiveSheetData;
     </script>
 </body>
 </html>
