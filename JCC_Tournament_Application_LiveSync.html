@@ -60,34 +60,64 @@
         <section id="sponsors-tab" class="tab-content"><div class="p-8 bg-white rounded shadow">Sponsors Content</div></section>
     </main>
 
-   <script>
-        async function fetchLiveSheetData() {
-            const statusEl = document.getElementById("syncStatus");
-            try {
-                const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
-                
-                // Fetch just the schedule tab (gid=862932346)
-                const res = await fetch(`${base}&gid=862932346`);
-                const csvText = await res.text();
-                
-                console.log("RAW CSV DATA FROM GOOGLE:", csvText);
-                
-                const data = Papa.parse(csvText, {header:true}).data;
-                const tbody = document.getElementById("scheduleTableBody");
-                
-                tbody.innerHTML = data.map(row => `
-                    <tr class="border-t">
-                        <td class="p-3">${JSON.stringify(row)}</td>
-                    </tr>
-                `).join("");
-                
-                statusEl.innerText = "Synced & Debugged";
-            } catch (err) {
-                console.error("DEBUG ERROR:", err);
-                statusEl.innerText = "Sync Failed";
-            }
+  <script>
+    // Global state
+    let appState = { teams: {}, schedules: [] };
+
+    async function fetchLiveSheetData() {
+        const statusEl = document.getElementById("syncStatus");
+        statusEl.innerText = "Syncing...";
+
+        // Force a timeout so it doesn't get stuck forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        try {
+            const base = `https://docs.google.com/spreadsheets/d/e/2PACX-1vS0PhsykHDq_juUCAayzwirZyoyrBwM72jfet9TkzGHfyiGUfYRohJb4sdtYwb7LsfXRHyOMFK15ZyM/pub?output=csv`;
+            
+            // Fetch the tabs
+            const responses = await Promise.all([
+                fetch(`${base}&gid=0`, { signal: controller.signal }),
+                fetch(`${base}&gid=862932346`, { signal: controller.signal })
+            ]);
+
+            const data = await Promise.all(responses.map(r => r.text()));
+            clearTimeout(timeoutId);
+
+            // Parse
+            const teamsData = Papa.parse(data[0], {header: true}).data;
+            const schedData = Papa.parse(data[1], {header: true}).data;
+
+            // Store in state
+            teamsData.forEach(r => { if(r.TeamID) appState.teams[r.TeamID] = r.TeamName; });
+            appState.schedules = schedData;
+
+            statusEl.innerText = "Synced";
+            renderSchedule(); 
+
+        } catch (err) {
+            console.error("DEBUG ERROR:", err);
+            statusEl.innerText = "Sync Failed (Check Console)";
         }
-        window.onload = fetchLiveSheetData;
-    </script>
+    }
+
+    function renderSchedule() {
+        const tbody = document.getElementById("scheduleTableBody");
+        if (!appState.schedules || appState.schedules.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='3'>No data found.</td></tr>";
+            return;
+        }
+
+        tbody.innerHTML = appState.schedules.map(row => `
+            <tr class="border-t">
+                <td class="p-3">${row.Time || 'TBD'} <br> <span class="text-xs text-blue-600">${row.Court || 'Court 1'}</span></td>
+                <td class="p-3 font-bold">${appState.teams[row.HomeID] || row.Home || row.HomeID || 'TBD'}</td>
+                <td class="p-3 font-bold">${appState.teams[row.AwayID] || row.Away || row.AwayID || 'TBD'}</td>
+            </tr>
+        `).join("");
+    }
+
+    window.onload = fetchLiveSheetData;
+</script>
 </body>
 </html>
