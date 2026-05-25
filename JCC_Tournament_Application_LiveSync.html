@@ -73,7 +73,7 @@
             const parsed = Papa.parse(csvText, {header:true});
             appState.schedules = parsed.data;
             
-            processStandings(); // Calculate wins/losses
+            processStandings();
             statusEl.innerText = "Synced";
             renderSchedule();
             renderStandings(); 
@@ -86,21 +86,33 @@
     function processStandings() {
         appState.standings = {};
         appState.schedules.forEach(game => {
-            // Only process if both teams and scores exist
+            // Check for valid IDs and numeric scores
             if (game.HomeID && game.AwayID && game.HomeScore !== "" && game.AwayScore !== "") {
-                const hScore = parseInt(game.HomeScore);
-                const aScore = parseInt(game.AwayScore);
+                const hScore = parseInt(game.HomeScore) || 0;
+                const aScore = parseInt(game.AwayScore) || 0;
 
                 [game.HomeID, game.AwayID].forEach(team => {
-                    if (!appState.standings[team]) appState.standings[team] = { W: 0, L: 0 };
+                    if (!appState.standings[team]) {
+                        appState.standings[team] = { W: 0, L: 0, Pts: 0, Diff: 0 };
+                    }
                 });
 
+                // Update Home Team
+                appState.standings[game.HomeID].Diff += (hScore - aScore);
                 if (hScore > aScore) {
                     appState.standings[game.HomeID].W++;
-                    appState.standings[game.AwayID].L++;
-                } else if (aScore > hScore) {
-                    appState.standings[game.AwayID].W++;
+                    appState.standings[game.HomeID].Pts += 2;
+                } else {
                     appState.standings[game.HomeID].L++;
+                }
+
+                // Update Away Team
+                appState.standings[game.AwayID].Diff += (aScore - hScore);
+                if (aScore > hScore) {
+                    appState.standings[game.AwayID].W++;
+                    appState.standings[game.AwayID].Pts += 2;
+                } else {
+                    appState.standings[game.AwayID].L++;
                 }
             }
         });
@@ -114,14 +126,22 @@
             <div class="bg-white shadow rounded-lg overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                        <tr><th class="p-3">Team</th><th class="p-3">Wins</th><th class="p-3">Losses</th></tr>
+                        <tr>
+                            <th class="p-3">Team</th>
+                            <th class="p-3 text-center">Won</th>
+                            <th class="p-3 text-center">Lost</th>
+                            <th class="p-3 text-center">Win Pts</th>
+                            <th class="p-3 text-center">+/-</th>
+                        </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y">
                         ${teams.map(team => `
-                            <tr class="border-t">
+                            <tr class="hover:bg-gray-50">
                                 <td class="p-3 font-bold">${team}</td>
-                                <td class="p-3">${appState.standings[team].W}</td>
-                                <td class="p-3">${appState.standings[team].L}</td>
+                                <td class="p-3 text-center">${appState.standings[team].W}</td>
+                                <td class="p-3 text-center">${appState.standings[team].L}</td>
+                                <td class="p-3 text-center font-bold text-blue-600">${appState.standings[team].Pts}</td>
+                                <td class="p-3 text-center ${appState.standings[team].Diff >= 0 ? 'text-green-600' : 'text-red-600'}">${appState.standings[team].Diff}</td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -130,34 +150,7 @@
         `;
     }
 
-    // --- YOUR EXISTING SCHEDULE LOGIC ---
-    function renderSchedule() {
-        const selectedDiv = document.getElementById("divisionSelector").value.trim();
-        const tbody = document.getElementById("scheduleTableBody");
-        const filtered = appState.schedules.filter(row => (row.Division || "").trim() === selectedDiv);
-
-        tbody.innerHTML = filtered.map(row => `
-            <tr class="border-b hover:bg-gray-50 transition">
-                <td class="p-4 text-sm">
-                    <div class="font-bold text-gray-800">${row.Time || 'TBD'}</div>
-                    <div class="text-xs text-blue-600 font-semibold">${row.Location || 'TBD'}</div>
-                </td>
-                <td class="p-4 font-bold text-gray-900">${row.HomeID || 'TBD'}</td>
-                <td class="p-4 font-bold text-gray-900">${row.AwayID || 'TBD'}</td>
-            </tr>
-        `).join("");
-    }
-
-    // Event Listeners & Tab Switching
-    document.getElementById("divisionSelector").addEventListener("change", renderSchedule);
-    window.onload = fetchLiveSheetData;
-
-    function switchTab(tabId, btnEl) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active-tab'));
-        document.getElementById(tabId).classList.add('active');
-        btnEl.classList.add('active-tab');
-    }
+    // Keep your renderSchedule and other functions exactly as they are
 </script>
 </body>
 </html>
