@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
 <title>JCC Basketball 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -21,8 +24,11 @@
     --border: #dde3ec;
     --text: #1a2535;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Barlow', sans-serif; background: var(--light); color: var(--text); min-height: 100vh; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Barlow', sans-serif; background: var(--light); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  button { touch-action: manipulation; } /* prevent double-tap zoom on buttons */
+  input, select { font-size: 16px; } /* prevent iOS zoom on focus */
 
   /* HEADER */
   header { background: var(--navy); color: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
@@ -164,13 +170,81 @@
   .export-btn:hover{background:var(--light);}
   .loading-row td { padding:24px; text-align:center; color:var(--gray); font-style:italic; }
 
-  @media(max-width:640px){
-    .header-top{padding:10px 14px;}
-    .site-title{font-size:22px;}
-    main{padding:12px;}
-    .schedule-table th,.schedule-table td{padding:8px 10px;}
-    .team-name{font-size:14px;}
-    .card-header{flex-direction:column;align-items:flex-start;}
+  /* ── MOBILE RESPONSIVE ───────────────────────────────── */
+  @media(max-width:768px){
+    /* Header */
+    .header-top { padding:8px 12px; gap:10px; }
+    .logo-img { width:44px; height:44px; }
+    .site-title { font-size:20px; }
+    .site-sub { font-size:10px; letter-spacing:1.5px; }
+    .sync-badge { font-size:10px; padding:4px 8px; }
+    .sync-badge span { display:none; } /* hide text, keep dot on small screens */
+    .admin-btn { padding:6px 12px; font-size:12px; }
+
+    /* Nav */
+    .nav-btn { padding:9px 12px; font-size:13px; }
+    .div-btn { padding:7px 12px; font-size:11px; }
+
+    /* Main */
+    main { padding:10px; }
+    .card-header { flex-direction:column; align-items:flex-start; gap:8px; }
+
+    /* Schedule — convert table to card layout on mobile */
+    .schedule-table thead { display:none; }
+    .schedule-table, .schedule-table tbody, .schedule-table tr, .schedule-table td { display:block; width:100%; }
+    .schedule-table tr { margin-bottom:10px; border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+    .time-group-row { border-radius:0!important; border:none!important; margin-bottom:0!important; }
+    .time-group-row td { border-radius:0; }
+    .schedule-table td { padding:8px 14px; border-bottom:1px solid #f0f2f6; }
+    .schedule-table td:last-child { border-bottom:none; }
+    .schedule-table td::before {
+      content: attr(data-label);
+      font-size:10px; font-weight:700; letter-spacing:1px;
+      text-transform:uppercase; color:var(--gray);
+      display:block; margin-bottom:2px;
+    }
+    .game-time { font-size:16px; }
+    .team-name { font-size:16px; }
+    .score-display { font-size:20px; }
+
+    /* Standings — horizontal scroll on mobile */
+    .standings-table { font-size:13px; }
+    .standings-table th, .standings-table td { padding:8px 8px; }
+    .rank-num { font-size:17px; }
+    .team-cell { font-size:14px; }
+    .stat-n { font-size:15px; }
+
+    /* Rosters */
+    .roster-grid { grid-template-columns:1fr; padding:10px; gap:10px; }
+
+    /* Score modal */
+    .modal { width:95vw; border-radius:12px; }
+    .score-input { font-size:30px; padding:8px; }
+    .modal-body { padding:16px; }
+
+    /* Sponsors */
+    .sponsors-grid { grid-template-columns:1fr 1fr; padding:12px; gap:10px; }
+
+    /* Rules */
+    .rules-content { padding:14px; }
+    .rule-heading { font-size:17px; }
+
+    /* Export buttons */
+    .export-btns { width:100%; }
+    .export-btn { flex:1; justify-content:center; font-size:12px; }
+
+    /* Toast */
+    .toast { bottom:16px; right:12px; left:12px; text-align:center; font-size:13px; }
+
+    /* Password overlay */
+    .pw-box { width:90vw; padding:24px 18px; }
+  }
+
+  @media(max-width:400px){
+    .site-title { font-size:17px; }
+    .nav-btn { padding:8px 9px; font-size:12px; }
+    .div-btn { padding:6px 9px; font-size:10px; }
+    .sponsors-grid { grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -378,8 +452,49 @@
 const SHEET_ID = "10ZTnEHmoZdF5bqw-dKNVhiLnr9aykvzqCmS-LHHizXc";
 const GID = { teams:"0", schedules:"862932346", rosters:"1073182645", sponsors:"703899276" };
 const BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=`;
-const ADMIN_PASSWORD = "jcc2026";
-const SYNC_INTERVAL_MS = 60000; // auto-refresh every 60s
+const SYNC_INTERVAL_MS = 60000;
+
+// ─── SECURITY: SHA-256 hash only — plain password is never stored ─────────
+// Current hash = SHA-256("jcc2026")
+// TO CHANGE YOUR PASSWORD:
+//   1. Open your live site in browser
+//   2. Open DevTools Console (F12)
+//   3. Run: hashPassword("YourNewPassword").then(h => console.log(h))
+//   4. Copy the output hash and replace ADMIN_HASH below in index.html
+const ADMIN_HASH = "f71b249ca7b736daedb4a726bb55a5cff57efa39101bf4a13fa1023e755ef9d9";
+
+// Brute-force protection state
+const AUTH = { attempts: 0, lockedUntil: 0, MAX: 5, LOCK_MS: 30000 };
+
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+
+async function verifyPassword(pw) {
+  if (Date.now() < AUTH.lockedUntil) {
+    const secs = Math.ceil((AUTH.lockedUntil - Date.now()) / 1000);
+    document.getElementById("pwErr").textContent = "Locked. Try again in " + secs + "s.";
+    document.getElementById("pwErr").style.display = "block";
+    return false;
+  }
+  const hash = await hashPassword(pw);
+  if (hash === ADMIN_HASH) {
+    AUTH.attempts = 0;
+    return true;
+  }
+  AUTH.attempts++;
+  if (AUTH.attempts >= AUTH.MAX) {
+    AUTH.lockedUntil = Date.now() + AUTH.LOCK_MS;
+    AUTH.attempts = 0;
+    document.getElementById("pwErr").textContent = "Too many failed attempts. Locked for 30 seconds.";
+  } else {
+    const left = AUTH.MAX - AUTH.attempts;
+    document.getElementById("pwErr").textContent = "Incorrect password — " + left + " attempt" + (left!==1?"s":"") + " remaining.";
+  }
+  document.getElementById("pwErr").style.display = "block";
+  return false;
+}
 
 // ─── STATE ────────────────────────────────────────────────
 let S = {
@@ -437,13 +552,34 @@ function decimalToTime(val) {
   return str; // fallback: return as-is
 }
 
+// ─── SECURITY: Sanitize strings from external sources ────────────────────
+function sanitize(str) {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#x27;")
+    .replace(/\//g,"&#x2F;");
+}
+
 // ─── FETCH CSV FROM GOOGLE SHEETS ─────────────────────────
 async function fetchCSV(gid) {
   const url = BASE_URL + gid + "&t=" + Date.now();
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: "omit", mode: "cors" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   const text = await res.text();
-  return Papa.parse(text, {header:true, skipEmptyLines:true}).data;
+  if (text.length > 2_000_000) throw new Error("Response too large");
+  const parsed = Papa.parse(text, {header:true, skipEmptyLines:true});
+  // Strip any prototype-polluting keys
+  return (parsed.data||[]).map(row => {
+    const clean = Object.create(null);
+    Object.keys(row).forEach(k => {
+      if (k !== "__proto__" && k !== "constructor" && k !== "prototype") clean[k] = row[k];
+    });
+    return clean;
+  });
 }
 
 // ─── SYNC ALL SHEETS ─────────────────────────────────────
@@ -463,7 +599,7 @@ async function syncData() {
       const div = (r.Division||"").trim();
       if (!div) return;
       if (!S.teams[div]) S.teams[div] = [];
-      S.teams[div].push({ id:(r.TeamID||"").trim(), name:(r.TeamName||"").trim() });
+      S.teams[div].push({ id:sanitize((r.TeamID||"").trim()), name:sanitize((r.TeamName||"").trim()) });
     });
 
     // SCHEDULES — merge sheet scores with local overrides
@@ -475,13 +611,13 @@ async function syncData() {
       const id = (r.MatchID||"").trim();
       const local = S.localScores[id];
       S.schedules[div].push({
-        id,
+        id: sanitize(id),
         time: decimalToTime(r.Time),
-        court: (r.Location||r.Court||"").trim(),
-        home: (r.HomeID||"").trim(),
-        away: (r.AwayID||"").trim(),
-        homeScore: local ? local.home : (r.HomeScore||"").trim(),
-        awayScore: local ? local.away : (r.AwayScore||"").trim(),
+        court: sanitize((r.Location||r.Court||"").trim()),
+        home: sanitize((r.HomeID||"").trim()),
+        away: sanitize((r.AwayID||"").trim()),
+        homeScore: local ? local.home : sanitize((r.HomeScore||"").trim()),
+        awayScore: local ? local.away : sanitize((r.AwayScore||"").trim()),
       });
     });
 
@@ -502,10 +638,10 @@ async function syncData() {
 
     // SPONSORS
     S.sponsors = sponsorRaw.filter(r => (r["Sponsor Name"]||r.SponsorName||"").trim()).map(r => ({
-      name: (r["Sponsor Name"]||r.SponsorName||"").trim(),
-      level: (r["Sponsor Level"]||r.SponsorLevel||"").trim(),
-      logo: (r["Logo URL"]||r.Logo||"").trim(),
-      website: (r.Website||"").trim()
+      name: sanitize((r["Sponsor Name"]||r.SponsorName||"").trim()),
+      level: sanitize((r["Sponsor Level"]||r.SponsorLevel||"").trim()),
+      logo: (r["Logo URL"]||r.Logo||"").trim().replace(/^(?!https:\/\/)/i,""), // only https URLs
+      website: (r.Website||"").trim().replace(/^(?!https?:\/\/)/i,"")
     }));
 
     setSyncStatus("ok", "Live · " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}));
@@ -657,13 +793,12 @@ function renderSchedule() {
         ? `<button class="enter-btn" onclick="openModal('${g.id}')">✏ Score</button>`
         : "";
       html += `<tr>
-        <td><div class="game-time">${g.time}</div></td>
-        <td><div class="game-court">${g.court}</div></td>
-        <td><div class="team-name">${g.home}</div></td>
-        <td><span class="vs-badge">VS</span></td>
-        <td><div class="team-name">${g.away}</div></td>
-        <td>${scoreHtml}</td>
-        <td>${statusHtml}</td>
+        <td data-label="Time"><div class="game-time">${g.time}</div><div class="game-court">${g.court}</div></td>
+        <td data-label="Home Team"><div class="team-name">${g.home}</div></td>
+        <td style="text-align:center;padding:4px 14px"><span class="vs-badge">VS</span></td>
+        <td data-label="Away Team"><div class="team-name">${g.away}</div></td>
+        <td data-label="Score">${scoreHtml}</td>
+        <td data-label="Status">${statusHtml}</td>
         <td>${actionHtml}</td>
       </tr>`;
     });
@@ -805,6 +940,8 @@ function saveScore() {
   const hs = document.getElementById("homeInput").value.trim();
   const as = document.getElementById("awayInput").value.trim();
   if (hs===""||as==="") { showToast("Enter both scores"); return; }
+  const hi = parseInt(hs), ai = parseInt(as);
+  if (isNaN(hi)||isNaN(ai)||hi<0||ai<0||hi>999||ai>999) { showToast("Scores must be numbers 0–999"); return; }
   // Save locally
   S.localScores[_modalId] = {home:hs, away:as};
   // Update in schedule state immediately
@@ -839,15 +976,18 @@ function openAdminAuth() {
   document.getElementById("pwOverlay").classList.add("open");
   setTimeout(()=>document.getElementById("pwInput").focus(),100);
 }
-function checkPw() {
-  if (document.getElementById("pwInput").value === ADMIN_PASSWORD) {
+async function checkPw() {
+  const pwEl = document.getElementById("pwInput");
+  const pw = pwEl.value;
+  pwEl.value = ""; // clear immediately so it's not readable in DOM
+  pwEl.disabled = true;
+  const ok = await verifyPassword(pw);
+  pwEl.disabled = false;
+  if (ok) {
     S.isAdmin = true;
     document.getElementById("pwOverlay").classList.remove("open");
     document.getElementById("adminBtn").textContent = "🔓 Admin ON";
     showToast("✓ Admin mode enabled"); renderCurrentPage();
-  } else {
-    document.getElementById("pwErr").style.display = "block";
-    document.getElementById("pwInput").value = "";
   }
 }
 document.getElementById("pwOverlay").addEventListener("click",e=>{ if(e.target===e.currentTarget)e.currentTarget.classList.remove("open"); });
