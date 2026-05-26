@@ -407,14 +407,34 @@ function saveLocal() {
 // ─── TIME CONVERSION ─────────────────────────────────────
 function decimalToTime(val) {
   if (!val && val !== 0) return "TBD";
-  const v = parseFloat(val);
-  if (isNaN(v)) return val; // already a string like "9:00 AM"
-  const totalMin = Math.round(v * 24 * 60);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  const period = h < 12 ? "AM" : "PM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${m.toString().padStart(2,"0")} ${period}`;
+  const str = String(val).trim();
+  if (!str) return "TBD";
+
+  // Format: "8:00:00 AM" or "12:30:00 PM" — what Google Sheets CSV exports
+  const hmsAP = str.match(/^(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)$/i);
+  if (hmsAP) {
+    const h = parseInt(hmsAP[1]), m = parseInt(hmsAP[2]), ap = hmsAP[3].toUpperCase();
+    return `${h}:${m.toString().padStart(2,"0")} ${ap}`;
+  }
+
+  // Format: "8:00 AM" — already clean
+  const hmAP = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (hmAP) {
+    return `${parseInt(hmAP[1])}:${hmAP[2]} ${hmAP[3].toUpperCase()}`;
+  }
+
+  // Format: Excel/Sheets decimal fraction of a day (0.3333 = 8:00 AM)
+  const v = parseFloat(str);
+  if (!isNaN(v) && v >= 0 && v < 1) {
+    const totalMin = Math.round(v * 24 * 60);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const period = h < 12 ? "AM" : "PM";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${m.toString().padStart(2,"0")} ${period}`;
+  }
+
+  return str; // fallback: return as-is
 }
 
 // ─── FETCH CSV FROM GOOGLE SHEETS ─────────────────────────
